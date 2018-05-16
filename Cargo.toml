@@ -1,0 +1,5 @@
+[package]
+name = "rust-messenger"
+version = "0.1.0"
+
+[dependencies]
