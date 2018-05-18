@@ -12,8 +12,8 @@ Potential Request Body
 ```
 {
   sender_id: String,
-    thread_id: String,
-    contents : String,
+  thread_id: String,
+  contents : String,
 }
 ```
 
@@ -25,8 +25,8 @@ Potential Request Body
 ```
 {
   user_id    : String,
-    start_index: Int,
-    end_index  : Int,
+  start_index: Int,
+  end_index  : Int,
 }
 ```
 
@@ -37,7 +37,7 @@ Potential Request Body
 ```
 {
   thread_id: String,
-    start_index: Int,
-    end_index  : Int,
+  start_index: Int,
+  end_index  : Int,
 }
 ```
