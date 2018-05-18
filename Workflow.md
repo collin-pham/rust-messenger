@@ -37,8 +37,8 @@ Each message will have a user_id (the sender of the message), contents, and a ti
   username
   [thread_id] (ordered by timestamp)
     timestamp
-      last_msg 
-      read
+    last_msg 
+    read
 ```
 ### Threads Table
 
@@ -47,6 +47,6 @@ Each message will have a user_id (the sender of the message), contents, and a ti
   [user_id] (this is an array so we can eventually support group messaging)
   [message_id] (ordered by timestamp)
     user_id 
-      contents
-      timestamp
+    contents
+    timestamp
 ```
