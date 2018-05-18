@@ -53,3 +53,5 @@ We see a few potential difficulties:
 * One person sends a message to another person. The server receives the message, attempting to send it to the recipient. If the recipient is not online, the server/threads need to handle how to store and eventually send the message to the recipient.
 
 * To the user, they will send a message, and the recipient will receive it, and vice versa.
+
+
