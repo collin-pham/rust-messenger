@@ -4,3 +4,8 @@ version = "0.1.0"
 
 [dependencies]
 websocket = "0.20.2"
+firebase = { git = "https://github.com/Phrohdoh/firebase-rs" }
+url = "1.2.1"
+hyper = "0.10"
+hyper-openssl = "0.2"
+rustc-serialize = "0.3.19"
