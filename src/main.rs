@@ -29,8 +29,8 @@ fn main() {
 //    let res = users::update_user_threads("SQrF5Bw5FndZMFl7eU3DldBJrsj1", "6", new_message, &firebase);
 //    println!("{}", res.ok().unwrap().body)
 
-    let res = threads::get_thread("test_thread_id", &firebase);
-    println!("{}", res.ok().unwrap().body)
+//    let res = threads::get_thread("test_thread_id", &firebase);
+//    println!("{}", res.ok().unwrap().body)
 
 //    let res = threads::create_thread(vec!["0", "1"], &firebase);
 //    println!("{}", res.ok().unwrap().body)

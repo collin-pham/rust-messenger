@@ -3,6 +3,7 @@ extern crate firebase;
 use self::firebase::{Firebase, Response};
 use super::{error, message};
 
+// index by range
 pub fn get_thread(thread_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{
     let thread = match firebase.at(&format!("/threads/{}", thread_id)) {
         Err(err)            => { return Err(error::handleParseError(err)) }
