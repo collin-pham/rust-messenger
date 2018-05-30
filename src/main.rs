@@ -17,8 +17,8 @@ fn main() {
 //    let res = users::get_user("SQrF5Bw5FndZMFl7eU3DldBJrsj1", &firebase);
 //    println!("{}", res.ok().unwrap().body)
 
-//    let res = db::get_user_threads("SQrF5Bw5FndZMFl7eU3DldBJrsj1", 1, 5, &firebase);
-//    println!("{}", res.ok().unwrap().body)
+//    let res = users::get_user_threads("SQrF5Bw5FndZMFl7eU3DldBJrsj1", 1, 5, &firebase);
+//    println!("{}", res.ok().unwrap().body);
 //
 //    let new_message = Message {
 //        user_id: "0".to_owned(),
@@ -28,13 +28,16 @@ fn main() {
 //    };
 //    let res = users::update_user_threads("SQrF5Bw5FndZMFl7eU3DldBJrsj1", "6", new_message, &firebase);
 //    println!("{}", res.ok().unwrap().body)
+//
+//    let res = threads::get_thread_user_ids("-LDiVOO2Sd86pSVAFvHD", &firebase);
+//    println!("{}", res.ok().unwrap().body);
 
-//    let res = threads::get_thread("test_thread_id", &firebase);
-//    println!("{}", res.ok().unwrap().body)
+//    let res = threads::get_thread_messages("-LDiVOO2Sd86pSVAFvHD",0, 3, &firebase);
+//    println!("{}", res.ok().unwrap().body);
 
 //    let res = threads::create_thread(vec!["0", "1"], &firebase);
 //    println!("{}", res.ok().unwrap().body)
-
+//
 //    let res = message::create_message("-LDiVOO2Sd86pSVAFvHD", new_message, &firebase);
 //    println!("{}", res.ok().unwrap().body);
 

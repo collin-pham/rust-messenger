@@ -3,15 +3,42 @@ extern crate firebase;
 use self::firebase::{Firebase, Response};
 use super::{error, message};
 
-// index by range
-pub fn get_thread(thread_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{
-    let thread = match firebase.at(&format!("/threads/{}", thread_id)) {
+pub fn get_thread_user_ids(thread_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError> {
+    let thread = match firebase.at(&format!("/threads/{}/user_ids", thread_id)) {
         Err(err)            => { return Err(error::handleParseError(err)) }
         Ok(user)            => user
     };
 
     let res = match thread.get() {
-        Err(err)    => { return Err(error::handleReqErr(err)) }
+        Err(err)    => {
+            println!("{:?}", err);
+            return Err(error::handleReqErr(err))
+        }
+        Ok(res)     => {
+            if res.body == "null" {
+                return Err(error::ServerError::InvalidThreadId)
+            }
+            res
+        }
+    };
+
+    Ok(res)
+}
+
+pub fn get_thread_messages(thread_id: &str, start_index: u32, end_index: u32, firebase: &Firebase)
+    -> Result<Response, error::ServerError>
+{
+    let thread = match firebase.at(&format!("/threads/{}/message_ids", thread_id)) {
+        Err(err)            => { return Err(error::handleParseError(err)) }
+        Ok(user)            => user
+    };
+
+    let range = end_index - start_index;
+    let res = match thread.order_by("\"timestamp\"").limit_to_first(3).get() {
+        Err(err)    => {
+            println!("{:?}", err);
+            return Err(error::handleReqErr(err))
+        }
         Ok(res)     => {
             if res.body == "null" {
                 return Err(error::ServerError::InvalidThreadId)
