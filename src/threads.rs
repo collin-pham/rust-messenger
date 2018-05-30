@@ -1,7 +1,7 @@
 extern crate firebase;
 
 use self::firebase::{Firebase, Response};
-use super::{error};
+use super::{error, message};
 
 pub fn get_thread(thread_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{
     let thread = match firebase.at(&format!("/threads/{}", thread_id)) {
@@ -22,9 +22,29 @@ pub fn get_thread(thread_id: &str, firebase: &Firebase) -> Result<Response, erro
     Ok(res)
 }
 
-//pub fn push_new_message() {
-//    unimplemented!();
-//}
+pub fn create_thread(user_ids: Vec<&str>, firebase: &Firebase)
+    -> Result<Response, error::ServerError>
+{
+    let thread = match firebase.at("/threads") {
+        Err(err)            => { return Err(error::handleParseError(err)) }
+        Ok(user)            => user
+    };
+
+    let res = match thread.push(&build_thread_JSON(user_ids)) {
+        Err(err)    => { return Err(error::handleReqErr(err)) }
+        Ok(thread)  => { thread }
+    };
+    Ok(res)
+}
+
+fn user_ids_to_str (user_ids: Vec<&str>) -> String {
+    format!("{:?}", user_ids)
+}
+
+fn build_thread_JSON(user_ids: Vec<&str>) -> String{
+    format!("{{\"user_ids\": {}}}", user_ids_to_str(user_ids))
+}
+
 
 #[cfg(test)]
 mod thread_tests {

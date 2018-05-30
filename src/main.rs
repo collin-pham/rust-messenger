@@ -4,8 +4,8 @@ extern crate rust_messenger;
 use std::thread;
 use websocket::OwnedMessage;
 use websocket::sync::Server;
-use rust_messenger::{db, users, threads};
-use rust_messenger::users::{ NewMessage };
+use rust_messenger::{db, users, threads, message};
+use rust_messenger::message::{ Message };
 // GLOBALS //
 const IPADDRESS  : &str = "127.0.0.1";
 const PORT       : &str = "8080";
@@ -20,9 +20,10 @@ fn main() {
 //    let res = db::get_user_threads("SQrF5Bw5FndZMFl7eU3DldBJrsj1", 1, 5, &firebase);
 //    println!("{}", res.ok().unwrap().body)
 //
-//    let new_message = NewMessage {
+//    let new_message = Message {
+//        user_id: "0".to_owned(),
 //        timestamp: 100,
-//        last_msg: "This Is A Test Message".to_owned(),
+//        contents: "This Is A Test Message".to_owned(),
 //        read: false,
 //    };
 //    let res = users::update_user_threads("SQrF5Bw5FndZMFl7eU3DldBJrsj1", "6", new_message, &firebase);
@@ -30,6 +31,13 @@ fn main() {
 
     let res = threads::get_thread("test_thread_id", &firebase);
     println!("{}", res.ok().unwrap().body)
+
+//    let res = threads::create_thread(vec!["0", "1"], &firebase);
+//    println!("{}", res.ok().unwrap().body)
+
+//    let res = message::create_message("-LDiVOO2Sd86pSVAFvHD", new_message, &firebase);
+//    println!("{}", res.ok().unwrap().body);
+
 
 
 

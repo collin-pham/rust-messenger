@@ -1,7 +1,7 @@
 extern crate firebase;
 
 use self::firebase::{Firebase, Response};
-use super::{error};
+use super::{error, message};
 
 pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{
     let user = match firebase.at(&format!("/users/{}", user_id)) {
@@ -38,14 +38,14 @@ pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebas
     Ok(res)
 }
 
-pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: NewMessage, firebase: &Firebase)
+pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: message::Message, firebase: &Firebase)
     -> Result<Response, error::ServerError>
 {
     let thread = match firebase.at(&format!("/users/{}/threads/{}", user_id, thread_id)) {
         Err(err)    => { return Err(error::handleParseError(err)) }
         Ok(user)    => user
     };
-    let msg = new_message_to_JSON(new_message);
+    let msg = message::new_message_to_user_JSON(new_message);
     let res = match thread.update(&msg) {
         Err(err)    => { return Err(error::handleReqErr(err)) }
         Ok(thread)  => { thread }
@@ -54,22 +54,3 @@ pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: NewMessa
     Ok(res)
 
 }
-
-fn new_message_to_JSON(new_message: NewMessage) -> String {
-    format!("{{\"timestamp\":{}, \"last_msg\":\"{}\", \"read\":{}}}",
-            new_message.timestamp,
-            new_message.last_msg,
-            new_message.read
-    )
-}
-
-pub struct NewMessage {
-    pub timestamp:  usize,
-    pub last_msg:   String,
-    pub read:       bool,
-}
-
-//#[cfg(test)]
-//mod user_tests {
-//    unimplemented!();
-//}

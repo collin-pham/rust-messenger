@@ -36,8 +36,9 @@ Each message will have a user_id (the sender of the message), contents, and a ti
 [user_id]
   username
   [thread_id] (ordered by timestamp)
+    user_id
+    contents
     timestamp
-    last_msg 
     read
 ```
 ### Threads Table
