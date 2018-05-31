@@ -2,7 +2,6 @@ extern crate websocket;
 extern crate rust_messenger;
 extern crate serde_json;
 
-use std::thread;
 use websocket::OwnedMessage;
 use websocket::sync::Server;
 use rust_messenger::{db, users, threads, message};

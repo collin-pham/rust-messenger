@@ -8,7 +8,7 @@ use self::firebase::{ReqErr, ParseError,};
 use std::str;
 use std::io;
 
-pub fn handleParseError(err: ParseError) -> ServerError {
+pub fn handle_parse_error(err: ParseError) -> ServerError {
     match err {
         ParseError::UrlHasNoPath    => ServerError::UrlHasNoPath,
         ParseError::UrlIsNotHTTPS   => ServerError::UrlIsNotHTTPS,
@@ -16,7 +16,7 @@ pub fn handleParseError(err: ParseError) -> ServerError {
     }
 }
 
-pub fn handleReqErr(err: ReqErr) -> ServerError {
+pub fn handle_req_error(err: ReqErr) -> ServerError {
     match err {
         ReqErr::ReqNotJSON                  => ServerError::ReqNotJSON,
         ReqErr::RespNotUTF8(err)            => ServerError::RespNotUTF8(err),
