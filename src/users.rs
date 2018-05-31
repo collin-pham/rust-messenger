@@ -29,17 +29,13 @@ pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebas
                         -> Result<Response, error::ServerError>
 {
     let threads = match firebase.at(&format!("/users/{}/threads", user_id)) {
-        Err(err)    => {
-            println!("{:?}", err);
-            return Err(error::handleParseError(err)) }
+        Err(err)    => { return Err(error::handleParseError(err)) }
         Ok(user)    => user
     };
 
     let range = end_index - start_index;
     let res = match threads.order_by("\"timestamp\"").start_at(start_index).limit_to_first(range).get() {
-        Err(err)    => {
-            println!("{:?}", err);
-            return Err(error::handleReqErr(err)) }
+        Err(err)    => { return Err(error::handleReqErr(err)) }
         Ok(threads) => threads
     };
 
