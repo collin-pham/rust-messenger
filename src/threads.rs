@@ -1,6 +1,9 @@
 extern crate firebase;
+extern crate serde_json;
+extern crate hyper;
 
 use self::firebase::{Firebase, Response};
+use self::serde_json::{ Value, Error };
 use super::{error, message};
 
 pub fn get_thread_user_ids(thread_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError> {
@@ -34,7 +37,7 @@ pub fn get_thread_messages(thread_id: &str, start_index: u32, end_index: u32, fi
     };
 
     let range = end_index - start_index;
-    let res = match thread.order_by("\"timestamp\"").limit_to_first(3).get() {
+    let res = match thread.order_by("\"timestamp\"").start_at(start_index).limit_to_first(range).get() {
         Err(err)    => {
             println!("{:?}", err);
             return Err(error::handleReqErr(err))
@@ -47,7 +50,7 @@ pub fn get_thread_messages(thread_id: &str, start_index: u32, end_index: u32, fi
         }
     };
 
-    Ok(res)
+    sort_thread_messages(res.body)
 }
 
 pub fn create_thread(user_ids: Vec<&str>, firebase: &Firebase)
@@ -65,6 +68,26 @@ pub fn create_thread(user_ids: Vec<&str>, firebase: &Firebase)
     Ok(res)
 }
 
+fn sort_thread_messages(messages: String) -> Result<Response, error::ServerError> {
+    let messages = match serde_json::from_str(&messages).unwrap() {
+        serde_json::Value::Object(map) => {
+            let mut messages: Vec<_> = map.values().cloned().collect();
+            messages.sort_by(|a, b| {
+                b.get("timestamp").unwrap().as_u64().unwrap().cmp(&a.get("timestamp").unwrap().as_u64().unwrap())
+            });
+
+            messages
+        }
+        _ => {return Err(error::ServerError::ReqNotJSON)}
+    };
+
+    let res = Response {
+        body: serde_json::Value::Array(messages).to_string(),
+        code: hyper::status::StatusCode::Ok,
+    };
+
+    Ok(res)
+}
 fn user_ids_to_str (user_ids: Vec<&str>) -> String {
     format!("{:?}", user_ids)
 }

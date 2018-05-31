@@ -1,6 +1,9 @@
 extern crate firebase;
+extern crate serde_json;
+extern crate hyper;
 
 use self::firebase::{Firebase, Response};
+use self::serde_json::{ Value, Error };
 use super::{error, message};
 
 pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{
@@ -26,16 +29,21 @@ pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebas
                         -> Result<Response, error::ServerError>
 {
     let threads = match firebase.at(&format!("/users/{}/threads", user_id)) {
-        Err(err)    => { return Err(error::handleParseError(err)) }
+        Err(err)    => {
+            println!("{:?}", err);
+            return Err(error::handleParseError(err)) }
         Ok(user)    => user
     };
 
     let range = end_index - start_index;
     let res = match threads.order_by("\"timestamp\"").start_at(start_index).limit_to_first(range).get() {
-        Err(err)    => { return Err(error::handleReqErr(err)) }
+        Err(err)    => {
+            println!("{:?}", err);
+            return Err(error::handleReqErr(err)) }
         Ok(threads) => threads
     };
-    Ok(res)
+
+    sort_user_threads(res.body)
 }
 
 pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: message::Message, firebase: &Firebase)
@@ -52,5 +60,26 @@ pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: message:
     };
 
     Ok(res)
+}
 
+fn sort_user_threads(threads: String) -> Result<Response, error::ServerError> {
+
+    let threads = match serde_json::from_str(&threads).unwrap() {
+        serde_json::Value::Object(map) => {
+            let mut threads: Vec<_> = map.values().cloned().collect();
+            threads.sort_by(|a, b| {
+                b.get("timestamp").unwrap().as_u64().unwrap().cmp(&a.get("timestamp").unwrap().as_u64().unwrap())
+            });
+
+            threads
+        }
+        err => { return Err(error::ServerError::ReqNotJSON) }
+    };
+
+    let res = Response {
+        body: serde_json::Value::Array(threads).to_string(),
+        code: hyper::status::StatusCode::Ok,
+    };
+
+    Ok(res)
 }
