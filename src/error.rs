@@ -29,6 +29,7 @@ pub fn handle_req_error(err: ReqErr) -> ServerError {
 }
 
 pub enum ServerError {
+    BadRequest,
     ReqNotJSON,
     RespNotUTF8(str::Utf8Error),
     NetworkErr(hyper::error::Error),
@@ -43,4 +44,6 @@ pub enum ServerError {
 
     InvalidUserId,
     InvalidThreadId,
+
+    DatabaseFormatErr,
 }

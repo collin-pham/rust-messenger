@@ -3,6 +3,11 @@ extern crate firebase;
 use self::firebase::{Firebase, Response};
 use super::{error};
 
+extern crate serde;
+extern crate serde_json;
+
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
     pub user_id:    String,
     pub timestamp:  usize,
