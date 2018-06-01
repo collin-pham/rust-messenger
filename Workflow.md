@@ -51,3 +51,47 @@ Each message will have a user_id (the sender of the message), contents, and a ti
     contents
     timestamp
 ```
+
+## Protocol
+
+### Actions
+
+send_message ->
+{
+    thread_id: String,
+    message: {
+        user_id: String,
+        contents: String,
+        timestamp: Int,
+    }
+    action: 'send_message'
+}
+
+create_thread ->
+{
+    user_ids: [String],
+    message: {
+        user_id: String,
+        contents: String,
+        timestamp: Int,
+    },
+    action: 'create_thread'
+}
+
+get_user_threads ->
+{
+    user_id: String,
+    start_index:    Int,
+    end_index:      Int,
+    action : 'get_user_threads'
+}
+
+get_thread_messages ->
+{
+    user_id:        String,
+    thread_id:      String,
+    start_index:    Int,
+    end_index:      Int
+    action:         'get_thread_messages'
+}
+

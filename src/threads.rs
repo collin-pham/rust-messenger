@@ -100,7 +100,7 @@ fn build_thread_json(user_ids: Vec<&str>) -> String{
 mod thread_tests {
     use super::{get_thread_messages};
     use super::super::{db, users};
-    
+
     #[test]
     fn get_thread_test() {
         let firebase = db::connect();

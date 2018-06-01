@@ -3,6 +3,7 @@ extern crate serde_json;
 extern crate hyper;
 
 use self::firebase::{Firebase, Response};
+use std::collections::HashMap;
 use super::{error, message};
 
 pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{
@@ -25,7 +26,7 @@ pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::S
 }
 
 pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebase: &Firebase)
-                        -> Result<Response, error::ServerError>
+    -> Result<Response, error::ServerError>
 {
     let threads = match firebase.at(&format!("/users/{}/threads", user_id)) {
         Err(err)    => { return Err(error::handle_parse_error(err)) }
@@ -58,15 +59,29 @@ pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: message:
 }
 
 fn sort_user_threads(threads: String) -> Result<Response, error::ServerError> {
-
     let threads = match serde_json::from_str(&threads).unwrap() {
-        serde_json::Value::Object(map) => {
-            let mut threads: Vec<_> = map.values().cloned().collect();
+        serde_json::Value::Object(json) => {
+            let mut threads = vec![];
+            // Put threads into vec.
+            for (key, thread) in json.into_iter() {
+                let mut item = serde_json::Map::new();
+                item.insert(key, thread);
+
+                threads.push(item);
+            }
+
+            // Sort threads by timestamp
             threads.sort_by(|a, b| {
-                b.get("timestamp").unwrap().as_u64().unwrap().cmp(&a.get("timestamp").unwrap().as_u64().unwrap())
+                // We truly apologize for this ugly code.
+                b.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap()
+                    .cmp(&a.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap())
             });
 
-            threads
+            let mut sorted_threads = vec![];
+            for item in threads.into_iter() {
+                sorted_threads.push(serde_json::Value::Object(item));
+            }
+            sorted_threads
         }
         _ => { return Err(error::ServerError::ReqNotJSON) }
     };
