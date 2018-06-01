@@ -131,12 +131,12 @@ fn main() {
                 None => { return Err(error::ServerError::DatabaseFormatErr) },
             };
 
-            let user = match json_v.get("user_id") {
-                Some(id) => id.as_str().unwrap(),
-                None => return Err(error::ServerError::DatabaseFormatErr),
-            };
+//            let user = match json_v.get("user_id") {
+//                Some(id) => id.as_str().unwrap(),
+//                None => return Err(error::ServerError::DatabaseFormatErr),
+//            };
 
-            let res = match users::update_user_threads(user, thread_id, new_mes, &firebase) {
+            let res = match message::create_message(thread_id, new_mes, &firebase) {
                 Ok(response) => response,
                 Err(err) => return Err(error::ServerError::ReqNotJSON),
             };
