@@ -1,6 +1,6 @@
 # Persistent data store
 
-rust-messenger will use a No-SQL DB (likely firebase) to handle and store messaging. 
+rust-messenger will use a No-SQL DB (likely firebase) to handle and store messaging.
 
 
 ## High level Workflow:
@@ -16,16 +16,16 @@ rust-messenger will use a No-SQL DB (likely firebase) to handle and store messag
   * Otherwise, return error (client shows message not sent)
 * Server pushes new message data to correct thread_id
 * Server updates both user's [thread_id] arrays
-  * If User B is connected to server, write to their stream with message data. 
+  * If User B is connected to server, write to their stream with message data.
     *   Client updates front end accordingly
-  * Otherwise, User B will see unread message next time they sign in. 
+  * Otherwise, User B will see unread message next time they sign in.
 
 
-## Schema 
+## Schema
 
-Below is how we will store message data in our DB. Each user will have a unique user_id. Associated with this user_id will be a username and an array of thread_id's (conversations). Conversations will be sorted by timestamp so that we can display conversations temporally. 
+Below is how we will store message data in our DB. Each user will have a unique user_id. Associated with this user_id will be a username and an array of thread_id's (conversations). Conversations will be sorted by timestamp so that we can display conversations temporally.
 
-Each conversation will have a unique thread_id. Associated with this thread_id will be an array of user_id's (the users involved in the conversation) and an array of message_id's (the actual messages). 
+Each conversation will have a unique thread_id. Associated with this thread_id will be an array of user_id's (the users involved in the conversation) and an array of message_id's (the actual messages).
 
 Each message will have a user_id (the sender of the message), contents, and a timestamp.
 
@@ -47,7 +47,7 @@ Each message will have a user_id (the sender of the message), contents, and a ti
 [thread_id]
   [user_id] (this is an array so we can eventually support group messaging)
   [message_id] (ordered by timestamp)
-    user_id 
+    user_id
     contents
     timestamp
 ```
@@ -56,6 +56,7 @@ Each message will have a user_id (the sender of the message), contents, and a ti
 
 ### Actions
 
+```
 send_message ->
 {
     thread_id: String,
@@ -66,7 +67,9 @@ send_message ->
     }
     action: 'send_message'
 }
+```
 
+```
 create_thread ->
 {
     user_ids: [String],
@@ -77,7 +80,9 @@ create_thread ->
     },
     action: 'create_thread'
 }
+```
 
+```
 get_user_threads ->
 {
     user_id: String,
@@ -85,7 +90,9 @@ get_user_threads ->
     end_index:      Int,
     action : 'get_user_threads'
 }
+```
 
+```
 get_thread_messages ->
 {
     user_id:        String,
@@ -94,4 +101,4 @@ get_thread_messages ->
     end_index:      Int
     action:         'get_thread_messages'
 }
-
+```

@@ -4,7 +4,7 @@ extern crate hyper_openssl;
 extern crate rustc_serialize;
 extern crate url;
 
-use self::firebase::{ReqErr, ParseError,};
+use self::firebase::{ReqErr, ParseError};
 use std::str;
 use std::io;
 
@@ -28,6 +28,7 @@ pub fn handle_req_error(err: ReqErr) -> ServerError {
     }
 }
 
+#[derive(Debug)]
 pub enum ServerError {
     BadRequest,
     ReqNotJSON,

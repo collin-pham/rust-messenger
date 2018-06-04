@@ -96,23 +96,23 @@ fn build_thread_json(user_ids: Vec<&str>) -> String{
 }
 
 
-//#[cfg(test)]
-//mod thread_tests {
-//    use super::{get_thread_messages};
-//    use super::super::{db, users};
-//
-//    #[test]
-//    fn get_thread_test() {
-//        let firebase = db::connect();
-//
-//        let res = get_thread_messages("test_thread_id", 0, 2, &firebase);
-//
-//        assert_eq!(
-//            res.ok().unwrap().body,
-//            "[\
-//            {\"contents\":\"fake data\",\"timestamp\":128,\"user_id\":1},\
-//            {\"contents\":\"fake data\",\"timestamp\":10,\"user_id\":0}\
-//            ]"
-//        )
-//    }
-//}
+#[cfg(test)]
+mod thread_tests {
+    use super::{get_thread_messages};
+    use super::super::{db, users};
+
+    #[test]
+    fn get_thread_test() {
+        let firebase = db::connect();
+
+        let res = get_thread_messages("test_thread_id", 0, 2, &firebase);
+
+        assert_eq!(
+            res.ok().unwrap().body,
+            "[\
+            {\"contents\":\"fake data\",\"timestamp\":128,\"user_id\":1},\
+            {\"contents\":\"fake data\",\"timestamp\":10,\"user_id\":0}\
+            ]"
+        )
+    }
+}
