@@ -1,14 +1,15 @@
 extern crate websocket;
 extern crate rust_messenger;
 extern crate serde;
-extern crate serde_json;
 extern crate firebase;
+
+#[macro_use]
+extern crate serde_json;
 
 use std::thread;
 use websocket::OwnedMessage;
 use websocket::sync::Server;
 use rust_messenger::{db, users, threads, message, error};
-//use rust_messenger::message::{ Message };
 use serde_json::{ Value };
 use firebase::{Firebase, Response};
 
@@ -83,11 +84,31 @@ fn main() {
                         println!("JSON data {:?}", string);
                         let json_v: Value = serde_json::from_str(string.as_str()).unwrap();
 
-                        //take_action(json_v, &firebase);
-                        match take_action(json_v, &firebase) {
+                        let action = match json_v.get("action") {
+                            Some(a) => a.as_str().unwrap(),
+                            None => return,
+                        };
+//                        let json_v = json!({
+//                            "user_ids": ["id1", "id2"],
+//                            "message": [
+//                                "user_id": "id1",
+//                                "contents": "test message",
+//                                "timestamp": 4.,
+//                            ],
+//                            "action": "create_thread".to_string(),
+//                        });
+//                        let action: &str = "create_thread";
+
+                        match take_action(&action, &json_v, &firebase) {
                             Ok(res) =>
-                                { let message = OwnedMessage::Text("Sent message".to_string());
-                                  sender.send_message(&message).unwrap(); }
+                                { let reply = json!({
+                                    "action": action.to_string(),
+                                    "data": res.body,
+                                  });
+                                  println!("Reply to frontend is {:?}", reply.to_string());
+                                  let message = OwnedMessage::Text(reply.to_string());
+                                  sender.send_message(&message).unwrap();
+                                }
                             Err(_)  => return,
                         }
                     }
@@ -108,13 +129,9 @@ fn main() {
         });
     }
 
-    fn take_action(json_v: serde_json::Value, firebase: &Firebase) -> Result<Response, error::ServerError> {
-        let action = match json_v.get("action") {
-            Some(a) => a.as_str().unwrap(),
-            None => return Err(error::ServerError::DatabaseFormatErr),
-        };
-        println!("Action is {}", action);
+    fn take_action(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Response, error::ServerError> {
 
+        println!("Action is {}", action);
 
         if action == "send_message" {
             println!("sending message...");
@@ -139,64 +156,67 @@ fn main() {
 
             let thread_id = match json_v.get("thread_id") {
                 Some(id) => id.as_str().unwrap(),
-                None => return Err(error::ServerError::DatabaseFormatErr),
+                None => { println!("Thread_id None value returned");
+                          return Err(error::ServerError::DatabaseFormatErr) },
             };
 
             let res = match message::create_message(thread_id, new_mes, &firebase) {
                 Ok(response) => response,
-                Err(err) => return Err(err),
+                Err(err) => { println!("Response None value returned");
+
+                              return Err(err) },
             };
 
             Ok(res)
         }
-//        else if action == "create_thread" {
-//            println!("creating thread...");
-//
-//            let m_string = match json_v.get("message") {
-//                Some(m) => { m.to_string() },
-//                None => {
-//                    println!("None value returned");
-//                    return Err(error::ServerError::DatabaseFormatErr)
-//                },
-//            };
-//
-//            let new_mes: message::Message = match serde_json::from_str(m_string.as_str()) {
-//                Ok(d) => { Some(d).unwrap() },
-//                Err(e) => {
-//                    eprintln!("error {:?}", e);
-//                    return Err(error::ServerError::DatabaseFormatErr)
-//                },
-//            };
-//
-//            let user_ids: Vec<&str> = match json_v.get("user_ids") {
-//                Some(ids) => ids,
-////                    .as_array()
-////                    .unwrap()
-////                    .iter()
-////                    .map(|&x| x.as_str())
-////                    .collect::<Vec<&str>>(),
-//                None => return Err(error::ServerError::DatabaseFormatErr),
-//            };
-//
-//            let res = match threads::create_thread(user_ids, &firebase) {
-//                Ok(response) => response,
-//                Err(err) => return Err(err),
-//            };
-//
-//            ///pushing message to user_id specified
-//            let user = match json_v.get("user_id") {
-//                Some(id) => id.as_str().unwrap(),
-//                None => return Err(error::ServerError::DatabaseFormatErr),
-//            };
-//
-//            ///needs right thread_id from create_thread
+        else if action == "create_thread" {
+            println!("creating thread...");
+
+            let m_string = match json_v.get("message") {
+                Some(m) => { m.to_string() },
+                None => {
+                    println!("None value returned");
+                    return Err(error::ServerError::DatabaseFormatErr)
+                },
+            };
+
+            let new_mes: message::Message = match serde_json::from_str(m_string.as_str()) {
+                Ok(d) => { Some(d).unwrap() },
+                Err(e) => {
+                    eprintln!("error {:?}", e);
+                    return Err(error::ServerError::DatabaseFormatErr)
+                },
+            };
+
+            let user_ids: Vec<&str> = match json_v.get("user_ids") {
+                Some(ids) => ids
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|ref x| x.as_str().unwrap())
+                    .collect::<Vec<&str>>(),
+                None => return Err(error::ServerError::DatabaseFormatErr),
+            };
+
+            let res = match threads::create_thread(user_ids, &firebase) {
+                Ok(response) => response,
+                Err(err) => return Err(err),
+            };
+
+            //pushing message to user_id specified
+            let user = match json_v.get("user_id") {
+                Some(id) => id.as_str().unwrap(),
+                None => return Err(error::ServerError::DatabaseFormatErr),
+            };
+
+//            //needs right thread_id from create_thread
 //            let res = match users::update_user_threads(user, thread_id, new_mes, &firebase) {
 //                Ok(response) => response,
 //                Err(err) => return Err(err),
 //            };
-//
-//            Ok(res)
-//        }
+
+            Ok(res)
+        }
         else if action == "get_user_threads" {
             println!("getting user threads...");
 

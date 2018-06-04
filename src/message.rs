@@ -19,12 +19,14 @@ pub fn create_message(thread_id: &str, new_message: Message, firebase: &Firebase
     -> Result<Response, error::ServerError>
 {
     let messages = match firebase.at(&format!("/threads/{}/message_ids", thread_id)) {
-        Err(err)            => { return Err(error::handle_parse_error(err)) }
+        Err(err)            => { //println!("Create_message error matching: {:?}", err);
+                                 return Err(error::handle_parse_error(err)) }
         Ok(user)            => user
     };
 
     let res = match messages.push(&new_message_to_thread_json(new_message)) {
-        Err(err)    => { return Err(error::handle_req_error(err)) }
+        Err(err)    => { //println!("Create_message error pushing: {:?}", err);
+                         return Err(error::handle_req_error(err)) }
         Ok(thread)  => { thread }
     };
 
