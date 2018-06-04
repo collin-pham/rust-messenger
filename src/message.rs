@@ -15,7 +15,7 @@ pub struct Message {
     pub read:       bool,
 }
 
-pub fn create_message(thread_id: &str, new_message: Message, firebase: &Firebase)
+pub fn create_message(thread_id: &str, new_message: &Message, firebase: &Firebase)
     -> Result<Response, error::ServerError>
 {
     let messages = match firebase.at(&format!("/threads/{}/message_ids", thread_id)) {
@@ -33,7 +33,7 @@ pub fn create_message(thread_id: &str, new_message: Message, firebase: &Firebase
     Ok(res)
 }
 
-pub fn new_message_to_user_json(new_message: Message) -> String {
+pub fn new_message_to_user_json(new_message: &Message) -> String {
     format!("{{\"user_id\":\"{}\", \"timestamp\":{}, \"contents\":\"{}\", \"read\":{}}}",
             new_message.user_id,
             new_message.timestamp,
@@ -42,7 +42,7 @@ pub fn new_message_to_user_json(new_message: Message) -> String {
     )
 }
 
-pub fn new_message_to_thread_json(new_message: Message) -> String {
+pub fn new_message_to_thread_json(new_message: &Message) -> String {
     format!("{{\"user_id\":\"{}\", \"timestamp\":{}, \"contents\":\"{}\"}}",
             new_message.user_id,
             new_message.timestamp,

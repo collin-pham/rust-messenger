@@ -2,9 +2,12 @@ extern crate websocket;
 extern crate rust_messenger;
 extern crate serde;
 extern crate firebase;
+extern crate hyper;
 
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 use std::thread;
 use websocket::OwnedMessage;
@@ -16,6 +19,13 @@ use firebase::{Firebase, Response};
 // GLOBALS //
 const IPADDRESS  : &str = "127.0.0.1";
 const PORT       : &str = "8080";
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Reply {
+    pub action: String,
+    pub body:   String,
+    pub code:   u32,
+}
 
 
 fn main() {
@@ -69,8 +79,8 @@ fn main() {
 
             println!("Connection from {}", ip);
 
-            let message = OwnedMessage::Text("Hello".to_string());
-            client.send_message(&message).unwrap();
+//            let message = OwnedMessage::Text("Hello".to_string());
+//            client.send_message(&message).unwrap();
 
             let (mut receiver, mut sender) = client.split().unwrap();
 
@@ -110,12 +120,14 @@ fn main() {
 
                         match take_action(&action, &json_v, &firebase) {
                             Ok(res) =>
-                                { let reply = json!({
-                                    "action": action.to_string(),
-                                    "data": res.body,
-                                  });
-                                  println!("Reply to frontend is {:?}", reply.to_string());
-                                  let message = OwnedMessage::Text(reply.to_string());
+                                { let reply = serde_json::to_string(&res).unwrap();
+//                                    let reply = json!({
+//                                    "action": action.to_string(),
+//                                    "data": res.body,
+//                                  });
+                                  println!("Reply to frontend is {:?}", reply);
+                                  //println!("Reply is {:?}", res);
+                                  let message = OwnedMessage::Text(reply);
                                   sender.send_message(&message).unwrap();
                                 }
                             Err(_)  => return,
@@ -138,7 +150,7 @@ fn main() {
         });
     }
 
-    fn take_action(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Response, error::ServerError> {
+    fn take_action(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Reply, error::ServerError> {
 
         println!("Action is {}", action);
 
@@ -169,14 +181,26 @@ fn main() {
                           return Err(error::ServerError::DatabaseFormatErr) },
             };
 
-            let res = match message::create_message(thread_id, new_mes, &firebase) {
+            let res = match message::create_message(thread_id, &new_mes, &firebase) {
                 Ok(response) => response,
                 Err(err) => { println!("Response None value returned");
 
                               return Err(err) },
             };
 
-            Ok(res)
+            let code: u32 = match res.code {
+                hyper::status::StatusCode::Ok => 200,
+                hyper::status::StatusCode::BadRequest => 400,
+                _ => 500,
+            };
+
+            let reply = Reply {
+                action: action.to_string(),
+                body: "".to_string(),
+                code
+            };
+
+            Ok(reply)
         }
         else if action == "create_thread" {
             println!("creating thread...");
@@ -197,14 +221,6 @@ fn main() {
                 },
             };
 
-            let new_mes2: message::Message = match serde_json::from_str(m_string.as_str()) {
-                Ok(d) => { Some(d).unwrap() },
-                Err(e) => {
-                    eprintln!("error {:?}", e);
-                    return Err(error::ServerError::DatabaseFormatErr)
-                },
-            };
-
             let user_ids: Vec<&str> = match json_v.get("user_ids") {
                 Some(ids) => ids
                     .as_array()
@@ -216,7 +232,7 @@ fn main() {
                           return Err(error::ServerError::DatabaseFormatErr) },
             };
 
-            let create_res = match threads::create_thread(user_ids, &firebase) {
+            let create_res = match threads::create_thread(&user_ids, &firebase) {
                 Ok(response) => response,
                 Err(err) => { println!("create_thread None value returned");
                               return Err(err) },
@@ -234,18 +250,37 @@ fn main() {
             let user = new_mes.user_id.clone();
             println!("Thread is {:?}", thread);
 
-            let res = match message::create_message(&thread, new_mes, &firebase) {
+            let res = match message::create_message(&thread, &new_mes, &firebase) {
                 Ok(response) => response,
                 Err(err) => { println!("Response None value returned");
                               return Err(err) },
             };
 
-            let res = match users::update_user_threads(&user, &thread, new_mes2, &firebase) {
+            for u in &user_ids {
+                let r = match users::update_user_threads(&u, &thread, &new_mes, &firebase) {
+                    Ok(response) => response,
+                    Err(err) => return Err(err),
+                };
+            }
+
+            let res = match users::update_user_threads(&user, &thread, &new_mes, &firebase) {
                 Ok(response) => response,
                 Err(err) => return Err(err),
             };
 
-            Ok(res)
+            let code: u32 = match res.code {
+                hyper::status::StatusCode::Ok => 200,
+                hyper::status::StatusCode::BadRequest => 400,
+                _ => 500,
+            };
+
+            let reply = Reply {
+                action: action.to_string(),
+                body: "".to_string(),
+                code
+            };
+
+            Ok(reply)
         }
         else if action == "get_user_threads" {
             println!("getting user threads...");
@@ -259,26 +294,35 @@ fn main() {
                 Some(i) => i.as_u64().unwrap() as u32,
                 None => return Err(error::ServerError::DatabaseFormatErr),
             };
+            println!("Start {}", start_index);
 
             let end_index = match json_v.get("end_index") {
                 Some(i) => i.as_u64().unwrap() as u32,
                 None => return Err(error::ServerError::DatabaseFormatErr),
             };
+            println!("End {}", end_index);
 
             let res = match users::get_user_threads(user_id, start_index, end_index, &firebase) {
                 Ok(response) => response,
                 Err(err) => return Err(err),
             };
 
-            Ok(res)
+            let code: u32 = match res.code {
+                hyper::status::StatusCode::Ok => 200,
+                hyper::status::StatusCode::BadRequest => 400,
+                _ => 500,
+            };
+
+            let reply = Reply {
+                action: action.to_string(),
+                body: res.body,
+                code
+            };
+
+            Ok(reply)
 
         } else if action == "get_thread_messages" {
             println!("getting thread messages...");
-
-            let user_id = match json_v.get("user_id") {
-                Some(id) => id.as_str().unwrap(),
-                None => return Err(error::ServerError::DatabaseFormatErr),
-            };
 
             let thread_id = match json_v.get("thread_id") {
                 Some(id) => id.as_str().unwrap(),
@@ -289,18 +333,32 @@ fn main() {
                 Some(i) => i.as_u64().unwrap() as u32,
                 None => return Err(error::ServerError::DatabaseFormatErr),
             };
+            println!("Start {}", start_index);
 
             let end_index = match json_v.get("end_index") {
                 Some(i) => i.as_u64().unwrap() as u32,
                 None => return Err(error::ServerError::DatabaseFormatErr),
             };
+            println!("End {}", end_index);
 
             let res = match threads::get_thread_messages(thread_id, start_index, end_index, &firebase) {
                 Ok(response) => response,
                 Err(err) => return Err(err),
             };
 
-            Ok(res)
+            let code: u32 = match res.code {
+                hyper::status::StatusCode::Ok => 200,
+                hyper::status::StatusCode::BadRequest => 400,
+                _ => 500,
+            };
+
+            let reply = Reply {
+                action: action.to_string(),
+                body: res.body,
+                code
+            };
+
+            Ok(reply)
         }
 
         else {

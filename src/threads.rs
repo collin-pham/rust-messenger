@@ -52,7 +52,7 @@ pub fn get_thread_messages(thread_id: &str, start_index: u32, end_index: u32, fi
     sort_thread_messages(res.body)
 }
 
-pub fn create_thread(user_ids: Vec<&str>, firebase: &Firebase)
+pub fn create_thread(user_ids: &Vec<&str>, firebase: &Firebase)
     -> Result<Response, error::ServerError>
 {
     let thread = match firebase.at("/threads") {
@@ -60,7 +60,7 @@ pub fn create_thread(user_ids: Vec<&str>, firebase: &Firebase)
         Ok(user)            => user
     };
 
-    let res = match thread.push(&build_thread_json(user_ids)) {
+    let res = match thread.push(&build_thread_json(&user_ids)) {
         Err(err)    => { return Err(error::handle_req_error(err)) }
         Ok(thread)  => { thread }
     };
@@ -87,11 +87,11 @@ fn sort_thread_messages(messages: String) -> Result<Response, error::ServerError
 
     Ok(res)
 }
-fn user_ids_to_str (user_ids: Vec<&str>) -> String {
+fn user_ids_to_str (user_ids: &Vec<&str>) -> String {
     format!("{:?}", user_ids)
 }
 
-fn build_thread_json(user_ids: Vec<&str>) -> String{
+fn build_thread_json(user_ids: &Vec<&str>) -> String{
     format!("{{\"user_ids\": {}}}", user_ids_to_str(user_ids))
 }
 

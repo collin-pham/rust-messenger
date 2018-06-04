@@ -42,7 +42,7 @@ pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebas
     sort_user_threads(res.body)
 }
 
-pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: message::Message, firebase: &Firebase)
+pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: &message::Message, firebase: &Firebase)
     -> Result<Response, error::ServerError>
 {
     let thread = match firebase.at(&format!("/users/{}/threads/{}", user_id, thread_id)) {
