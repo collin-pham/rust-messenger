@@ -82,22 +82,31 @@ fn main() {
 
                         //get action type from JSON data
                         println!("JSON data {:?}", string);
-                        let json_v: Value = serde_json::from_str(string.as_str()).unwrap();
-
-                        let action = match json_v.get("action") {
-                            Some(a) => a.as_str().unwrap(),
-                            None => return,
-                        };
+//                        let json_v: Value = serde_json::from_str(string.as_str()).unwrap();
+//
+//                        let action = match json_v.get("action") {
+//                            Some(a) => a.as_str().unwrap(),
+//                            None => return,
+//                        };
 //                        let json_v = json!({
 //                            "user_ids": ["id1", "id2"],
-//                            "message": [
+//                            "message": {
 //                                "user_id": "id1",
 //                                "contents": "test message",
-//                                "timestamp": 4.,
-//                            ],
-//                            "action": "create_thread".to_string(),
+//                                "timestamp": 4,
+//                                "read": false,
+//                            },
+//                            "action": "create_thread",
 //                        });
-//                        let action: &str = "create_thread";
+//                        let action: String = "create_thread".to_string();
+
+                        let json_v = json!({
+                            "user_id": "id1",
+                            "start_index": 0,
+                            "end_index": 10,
+                            "action": "get_user_threads"
+                        });
+                        let action: String = "get_user_threads".to_string();
 
                         match take_action(&action, &json_v, &firebase) {
                             Ok(res) =>
@@ -188,6 +197,14 @@ fn main() {
                 },
             };
 
+            let new_mes2: message::Message = match serde_json::from_str(m_string.as_str()) {
+                Ok(d) => { Some(d).unwrap() },
+                Err(e) => {
+                    eprintln!("error {:?}", e);
+                    return Err(error::ServerError::DatabaseFormatErr)
+                },
+            };
+
             let user_ids: Vec<&str> = match json_v.get("user_ids") {
                 Some(ids) => ids
                     .as_array()
@@ -195,25 +212,38 @@ fn main() {
                     .iter()
                     .map(|ref x| x.as_str().unwrap())
                     .collect::<Vec<&str>>(),
-                None => return Err(error::ServerError::DatabaseFormatErr),
+                None => { println!("user_ids None value returned");
+                          return Err(error::ServerError::DatabaseFormatErr) },
             };
 
-            let res = match threads::create_thread(user_ids, &firebase) {
+            let create_res = match threads::create_thread(user_ids, &firebase) {
+                Ok(response) => response,
+                Err(err) => { println!("create_thread None value returned");
+                              return Err(err) },
+            };
+
+            let thread = match serde_json::from_str(&create_res.body).unwrap() {
+                serde_json::Value::Object(map) => {
+                    //println!("Map is {:?}", map);
+                    //println!("{:?}", map.get("name").unwrap().to_string());
+                    map.get("name").unwrap().to_string()
+                },
+                _ => {return Err(error::ServerError::ReqNotJSON) }
+            };
+
+            let user = new_mes.user_id.clone();
+            println!("Thread is {:?}", thread);
+
+            let res = match message::create_message(&thread, new_mes, &firebase) {
+                Ok(response) => response,
+                Err(err) => { println!("Response None value returned");
+                              return Err(err) },
+            };
+
+            let res = match users::update_user_threads(&user, &thread, new_mes2, &firebase) {
                 Ok(response) => response,
                 Err(err) => return Err(err),
             };
-
-            //pushing message to user_id specified
-            let user = match json_v.get("user_id") {
-                Some(id) => id.as_str().unwrap(),
-                None => return Err(error::ServerError::DatabaseFormatErr),
-            };
-
-//            //needs right thread_id from create_thread
-//            let res = match users::update_user_threads(user, thread_id, new_mes, &firebase) {
-//                Ok(response) => response,
-//                Err(err) => return Err(err),
-//            };
 
             Ok(res)
         }
