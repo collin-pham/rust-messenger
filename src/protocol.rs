@@ -6,6 +6,7 @@ extern crate serde_json;
 
 use self::firebase::Firebase;
 use super::{error, message, threads, users};
+use std::str;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Reply {
@@ -127,12 +128,15 @@ fn action_create_thread(action: &str, json_v: &serde_json::Value, firebase: &Fir
 
     let thread = match serde_json::from_str(&create_res.body).unwrap() {
         serde_json::Value::Object(map) => {
+            println!("{:?}", map);
             //println!("Map is {:?}", map);
             //println!("{:?}", map.get("name").unwrap().to_string());
             map.get("name").unwrap().to_string()
         },
         _ => {return Err(error::ServerError::ReqNotJSON) }
     };
+
+    let thread = str::replace(&thread, "\"", "");
 
     let user = new_mes.user_id.clone();
     println!("Thread is {:?}", thread);
