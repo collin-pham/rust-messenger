@@ -3,7 +3,6 @@ extern crate serde_json;
 extern crate hyper;
 
 use self::firebase::{Firebase, Response};
-use std::collections::HashMap;
 use super::{error, message};
 
 pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{

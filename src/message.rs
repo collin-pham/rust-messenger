@@ -49,3 +49,27 @@ pub fn new_message_to_thread_json(new_message: &Message) -> String {
             new_message.contents,
     )
 }
+
+//#[cfg(test)]
+//mod message_tests {
+//    use super::*;
+//    use super::super::{db, users};
+//
+//    #[test]
+//    fn create_message_test() {
+//        let firebase = db::connect();
+//        let m = Message {
+//            user_id: "a".to_string(),
+//            timestamp: 20,
+//            contents: "create_message_test".to_string(),
+//            read: false,
+//        };
+//
+//        let res = create_message("test_thread_id", &m, &firebase);
+//
+//        assert_eq!(
+//            res.ok().unwrap().body,
+//            "a"
+//        )
+//    }
+//}

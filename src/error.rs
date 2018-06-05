@@ -38,13 +38,10 @@ pub enum ServerError {
     FirebaseIoErr(String),
     FirebaseIoJsonParseErr(rustc_serialize::json::DecoderError),
     OtherErr(io::Error),
-
     UrlHasNoPath,
     UrlIsNotHTTPS,
     Parser(url::ParseError),
-
     InvalidUserId,
     InvalidThreadId,
-
     DatabaseFormatErr,
 }
