@@ -88,25 +88,6 @@ fn main() {
                         println!("Turning data into json...");
                         let req: protocol::Request = serde_json::from_str(string.as_str()).unwrap();
 
-//                        println!("Extracting action...");
-//                        let action = match json_v.get("action") {
-//                            Some(a) => a.as_str().unwrap(),
-//                            None => return,
-//                        };
-//                        println!("Right after action");
-//                        let body = match json_v.get("body") {
-//                            Some(b) => b,
-//                            None => {println!("none inside body"); return },
-//                        };
-//                        let json_v_body: Value = match serde_json::from_str(body) {
-//                            Ok(d) => { d },
-//                            Err(e) => {
-//                                eprintln ! ("error {:?}", e);
-//                                return
-//                            },
-//                        };
-//                        println!("Json body {:?}", json_v_body);
-
                         match protocol::take_action(&req, &firebase, &user_id, &clone) {
                             Ok(res) => {
                                 let reply = serde_json::to_string(&res).unwrap();
