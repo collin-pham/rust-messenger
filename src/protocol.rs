@@ -8,10 +8,10 @@ use self::firebase::Firebase;
 use super::{error, message, threads, users};
 use self::websocket::OwnedMessage;
 use self::websocket::sender::Writer;
+use std::str;
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
-use std::str;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Reply {
@@ -33,6 +33,7 @@ pub fn take_action(
     id: &str,
     connected_users: &Arc<Mutex<HashMap<String, Writer<TcpStream>>>>)
     -> Result<Reply, error::ServerError> {
+
     println!("Action is {}", action);
 
     if action == "send_message" {

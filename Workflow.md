@@ -34,6 +34,7 @@ Each message will have a user_id (the sender of the message), contents, and a ti
 
 ```
 [user_id]
+  email
   username
   [thread_id] (ordered by timestamp)
     user_id
@@ -95,9 +96,10 @@ get_user_threads ->
 ```
 get_thread_messages ->
 {
+    user_id:        String,
     thread_id:      String,
     start_index:    Int,
     end_index:      Int
     action:         'get_thread_messages'
-
+}
 ```

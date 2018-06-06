@@ -33,7 +33,7 @@ fn main() {
     for request in server.filter_map(Result::ok) {
 
         let user_id = match &request.request.subject.1 {
-            hyper::uri::RequestUri::AbsolutePath(path) => {
+            &hyper::uri::RequestUri::AbsolutePath(ref path) => {
                 let user_id = str::replace(&path, "/?user_id=", "");
                 println!("{:?}", user_id);
                 user_id
@@ -73,15 +73,15 @@ fn main() {
                             None => return,
                         };
 
-//                        if action == "send_message" {
-//                            match clone.lock().unwrap().get_mut("19yW68EJ8eOW6csXxs0V25Q9PoK2") {
-//                                Some(receiver) => {
-//                                    let message = OwnedMessage::Text("{\"message\":\"This is from Safari\"}".to_owned());
-//                                    receiver.send_message(&message);
-//                                }
-//                                None => {println!("User not connected!")}
-//                            }
-//                        }
+                        if action == "send_message" {
+                            match clone.lock().unwrap().get_mut("19yW68EJ8eOW6csXxs0V25Q9PoK2") {
+                                Some(receiver) => {
+                                    let message = OwnedMessage::Text("{\"message\":\"This is from Safari\"}".to_owned());
+                                    receiver.send_message(&message);
+                                }
+                                None => {println!("User not connected!")}
+                            }
+                        }
 
                         match protocol::take_action(&action, &json_v, &firebase, &user_id, &clone) {
                             Ok(res) => {
