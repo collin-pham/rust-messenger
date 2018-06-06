@@ -35,9 +35,17 @@ pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebas
     let range = end_index - start_index;
     let res = match threads.order_by("\"timestamp\"").start_at(start_index).limit_to_first(range).get() {
         Err(err)    => { return Err(error::handle_req_error(err)) }
-        Ok(threads) => threads
+        Ok(threads) => {
+            if threads.body == "null" {
+                return Ok(Response {
+                    body: serde_json::Value::Array(vec![]).to_string(),
+                    code: hyper::status::StatusCode::Ok,
+                })
+            } else {
+                threads
+            }
+        }
     };
-
     sort_user_threads(res.body)
 }
 

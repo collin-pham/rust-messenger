@@ -246,7 +246,17 @@ fn action_get_thread_messages(action: &str, json_v: &serde_json::Value, firebase
     let res = match threads::get_thread_messages(thread_id, start_index, end_index, &firebase) {
         Ok(response) => response,
         Err(err) => { println!("Error get_user_threads {:?}", err);
-            return Err(err) }
+            match err {
+                error::ServerError::InvalidThreadId => {
+                    return Ok(Reply{
+                        action: action.to_string(),
+                        body: "Invalid Thread Id".to_string(),
+                        code: 404
+                    })
+                }
+                _ => return Err(err)
+            }
+        }
     };
 
     let code: u32 = match res.code {
