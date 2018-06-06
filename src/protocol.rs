@@ -118,7 +118,7 @@ fn action_send_message(
                 Some(receiver) => {
                     let reply = Reply {
                         action  : "receive_message".to_owned(),
-                        body    : format!("{{\"thread_id\":\"{}\"}}", thread_id),
+                        body    : format!("{{\"thread_id\":\"{}\", \"message\": {}}}", thread_id, m_string),
                         code    : 200,
                     };
 
@@ -248,14 +248,14 @@ fn action_get_user_threads(action: &str, json_v: &serde_json::Value, firebase: &
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
-    println!("Start {}", start_index);
+
 
     let end_index = match json_v.get("end_index") {
         Some(i) => i.as_u64().unwrap() as u32,
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
-    println!("End {}", end_index);
+
 
     let res = match users::get_user_threads(user_id, start_index, end_index, &firebase) {
         Ok(response) => response,
@@ -292,14 +292,12 @@ fn action_get_thread_messages(action: &str, json_v: &serde_json::Value, firebase
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
-    println!("Start {}", start_index);
 
     let end_index = match json_v.get("end_index") {
         Some(i) => i.as_u64().unwrap() as u32,
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
-    println!("End {}", end_index);
 
     let res = match threads::get_thread_messages(thread_id, start_index, end_index, &firebase) {
         Ok(response) => response,

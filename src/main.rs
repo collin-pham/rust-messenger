@@ -12,6 +12,7 @@ use rust_messenger::{db, protocol};
 use websocket::OwnedMessage;
 use websocket::sync::Server;
 use websocket::sender::Writer;
+use websocket::server;
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
@@ -25,13 +26,16 @@ const PORT       : &str = "8080";
 
 
 fn main() {
-
+    println!("Binding to server...");
     let server = Server::bind(format!("{}:{}", IPADDRESS, PORT)).unwrap();
 
+    println!("Creating connected Users...");
     let connected_users: Arc<Mutex<HashMap<String, Writer<TcpStream>>>> = Arc::new(Mutex::new(HashMap::new()));
 
+    println!("Consuming Incoming Requests...");
     for request in server.filter_map(Result::ok) {
 
+        println!("Getting UserId...");
         let user_id = match &request.request.subject.1 {
             hyper::uri::RequestUri::AbsolutePath(path) => {
                 let user_id = str::replace(&path, "/?user_id=", "");
@@ -43,73 +47,120 @@ fn main() {
         let clone = connected_users.clone();
 
         thread::spawn(move || {
+            println!("Establishing Firebase Connection...");
             let firebase = db::connect();
 
+            println!("Checking If There Is The Correct Protocol...");
             if !request.protocols().contains(&"rust-websocket".to_string()) {
                 request.reject().unwrap();
                 return;
             }
 
+            println!("Selecting The Correct Protocol...");
             let client = request.use_protocol("rust-websocket").accept().unwrap();
 
+            println!("Obtaining IpAddress...");
             let ip = client.peer_addr().unwrap();
 
             println!("Connection from {}", ip);
-
+            println!("Parsing Receiver and Sender...");
             let (mut receiver, mut sender) = client.split().unwrap();
 
-            clone.lock().unwrap().insert(user_id.clone(), sender);
+            println!("Inserting User Into HashMap...");
+            match clone.lock() {
+                Ok(mut map) => {
+                    map.insert(user_id.clone(), sender);
+                }
+                Err(err) => {println!("Error locking Mutex {:?}", err)}
+            }
 
             for message in receiver.incoming_messages() {
-                let message = message.unwrap();
+                let message = match message {
+                    Ok(message) => { message }
+                    Err(err)    => {
+                        println!("No Incoming Message {:?}", err);
+                        break;
+                    }
+                };
 
                 match message {
                     OwnedMessage::Text(string) => {
-                        println!("JSON data {:?}", string);
+                        println!("Turning data into json...");
                         let json_v: Value = serde_json::from_str(string.as_str()).unwrap();
 
+                        println!("Extracting action...");
                         let action = match json_v.get("action") {
                             Some(a) => a.as_str().unwrap(),
                             None => return,
                         };
 
-//                        if action == "send_message" {
-//                            match clone.lock().unwrap().get_mut("19yW68EJ8eOW6csXxs0V25Q9PoK2") {
-//                                Some(receiver) => {
-//                                    let message = OwnedMessage::Text("{\"message\":\"This is from Safari\"}".to_owned());
-//                                    receiver.send_message(&message);
-//                                }
-//                                None => {println!("User not connected!")}
-//                            }
-//                        }
-
                         match protocol::take_action(&action, &json_v, &firebase, &user_id, &clone) {
                             Ok(res) => {
                                 let reply = serde_json::to_string(&res).unwrap();
-                                println!("Reply to frontend is {:?}", reply);
                                 let message = OwnedMessage::Text(reply);
-                                clone.lock().unwrap().get_mut(&user_id)
-                                      .unwrap().send_message(&message).unwrap();
-//                                  sender.send_message(&message).unwrap();
+                                println!("Send Message To Client");
+                                match clone.lock() {
+                                    Ok(mut map) => {
+                                        match map.get_mut(&user_id) {
+                                            Some(receiver) => {
+                                                match receiver.send_message(&message) {
+                                                    Ok(success) => {println!("{:?}", success)}
+                                                    Err(err) => {println!("error sending message during call to take_action {:?}", err)}
+                                                }
+                                            }
+                                            None => {println!("User: {} Is Not Connected", &user_id)}
+                                        }
+                                    }
+                                    Err(err) => {println!("Error locking Mutex {:?} during call to take_action", err)}
                                 }
+                            }
                             Err(_)  => panic!("Thread encountered an error!"),
                         }
                     }
 
                     OwnedMessage::Close(_) => {
+                        println!("Attempting To Disconnect Client");
                         let message = OwnedMessage::Close(None);
-                        clone.lock().unwrap().get_mut(&user_id)
-                            .unwrap().send_message(&message).unwrap();
+                        match clone.lock() {
+                            Ok(mut map) => {
+                                match map.get_mut(&user_id) {
+                                    Some(receiver) => {
+                                        match receiver.send_message(&message) {
+                                            Ok(success) => {println!("{:?}", success)}
+                                            Err(err) => {println!("error sending discconnect message: {:?}", err)}
+                                        }
+                                    }
+                                    None => {println!("User: {} Is Already Disconnected", &user_id)}
+                                }
+
+                            }
+                            Err(err) => {println!("Error locking Mutex {:?} when trying to disconnect user {}", err, &user_id)}
+                        }
+
+                        match clone.lock() {
+                            Ok(mut map) => {
+                                match map.remove(&user_id) {
+                                    Some(_) => { println!("Successfully removed receiver {}", &user_id)}
+                                    None => {println!("User: {} Is Already Disconnected", &user_id)}
+                                }
+
+                            }
+                            Err(err) => {println!("Error locking Mutex {:?} when trying to remove user {}", err, &user_id)}
+                        }
                         println!("Client {} disconnected", ip);
                         return;
                     }
                     OwnedMessage::Ping(ping) => {
+                        println!("Ping Ping Ping");
                         let message = OwnedMessage::Pong(ping);
                         clone.lock().unwrap().get_mut(&user_id)
                             .unwrap().send_message(&message).unwrap();
                     }
-                    _ => { clone.lock().unwrap().get_mut(&user_id)
-                        .unwrap().send_message(&message).unwrap(); },
+                    _ => {
+                        println!("This is happening");
+                        clone.lock().unwrap().get_mut(&user_id)
+                        .unwrap().send_message(&message).unwrap();
+                    },
                 }
             }
         });

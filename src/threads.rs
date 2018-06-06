@@ -36,7 +36,7 @@ pub fn get_thread_messages(thread_id: &str, start_index: u32, end_index: u32, fi
     };
 
     let range = end_index - start_index;
-    let res = match thread.order_by("\"timestamp\"").start_at(start_index).limit_to_first(range).get() {
+    let res = match thread.order_by("\"timestamp\"").limit_to_last(range).get() {
         Err(err)    => {
             println!("{:?}", err);
             return Err(error::handle_req_error(err))
