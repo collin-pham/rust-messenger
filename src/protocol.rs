@@ -6,6 +6,11 @@ extern crate serde_json;
 
 use self::firebase::Firebase;
 use super::{error, message, threads, users};
+use self::websocket::OwnedMessage;
+use self::websocket::sender::Writer;
+use std::net::TcpStream;
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 use std::str;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -21,12 +26,18 @@ pub struct Reply {
 //    pub action: String,
 //}
 
-pub fn take_action(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+pub fn take_action(
+    action: &str,
+    json_v: &serde_json::Value,
+    firebase: &Firebase,
+    id: &str,
+    connected_users: &Arc<Mutex<HashMap<String, Writer<TcpStream>>>>)
+    -> Result<Reply, error::ServerError> {
     println!("Action is {}", action);
 
     if action == "send_message" {
         println!("sending message...");
-        return action_send_message(action, &json_v, firebase)
+        return action_send_message(action, &json_v, firebase, id, connected_users)
 
     } else if action == "create_thread" {
         println!("creating thread...");
@@ -46,7 +57,13 @@ pub fn take_action(action: &str, json_v: &serde_json::Value, firebase: &Firebase
     }
 }
 
-fn action_send_message(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+fn action_send_message(
+    action: &str,
+    json_v: &serde_json::Value,
+    firebase: &Firebase,
+    id: &str,
+    connected_users: &Arc<Mutex<HashMap<String, Writer<TcpStream>>>>
+) -> Result<Reply, error::ServerError> {
     let m_string = match json_v.get("message") {
         Some(m) => { m.to_string() },
         None => {
@@ -96,6 +113,21 @@ fn action_send_message(action: &str, json_v: &serde_json::Value, firebase: &Fire
             Ok(response) => response,
             Err(err) => return Err(err),
         };
+        if u != id {
+            match connected_users.lock().unwrap().get_mut(u.as_str().unwrap()) {
+                Some(receiver) => {
+                    let reply = Reply {
+                        action  : "receive_message".to_owned(),
+                        body    : format!("{{\"thread_id\":\"{}\"}}", thread_id),
+                        code    : 200,
+                    };
+
+                    let message = OwnedMessage::Text(serde_json::to_string(&reply).unwrap());
+                    receiver.send_message(&message);
+                }
+                None => {println!("User not connected!")}
+            }
+        }
     }
 
 

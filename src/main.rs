@@ -73,17 +73,17 @@ fn main() {
                             None => return,
                         };
 
-                        if action == "send_message" {
-                            match clone.lock().unwrap().get_mut("19yW68EJ8eOW6csXxs0V25Q9PoK2") {
-                                Some(receiver) => {
-                                    let message = OwnedMessage::Text("{\"message\":\"This is from Safari\"}".to_owned());
-                                    receiver.send_message(&message);
-                                }
-                                None => {println!("User not connected!")}
-                            }
-                        }
-                        
-                        match protocol::take_action(&action, &json_v, &firebase) {
+//                        if action == "send_message" {
+//                            match clone.lock().unwrap().get_mut("19yW68EJ8eOW6csXxs0V25Q9PoK2") {
+//                                Some(receiver) => {
+//                                    let message = OwnedMessage::Text("{\"message\":\"This is from Safari\"}".to_owned());
+//                                    receiver.send_message(&message);
+//                                }
+//                                None => {println!("User not connected!")}
+//                            }
+//                        }
+
+                        match protocol::take_action(&action, &json_v, &firebase, &user_id, &clone) {
                             Ok(res) => {
                                 let reply = serde_json::to_string(&res).unwrap();
                                 println!("Reply to frontend is {:?}", reply);
