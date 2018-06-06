@@ -30,53 +30,15 @@
  *
  *
  *
- * Protocols sent to this crate from frontend
+ * Protocols sent to this crate from frontend are in struct `Request`.
  *
  * ```rust,ignore
- * //conversation between two users already exists, simply send a message
- * Struct send_message {
- *    thread_id:     String,
- *    message: {
- *        user_id:   String,
- *        contents:  String,
- *        timestamp: u32,
- *    },
- *    action:        "send_message"
+ * pub struct Request {
+ *   pub body:   serde_json::Value, //e.g. for send_message, thread_id and a message
+ *   pub action: String,
  * }
  * ```
  *
- * ```rust,ignore
- * //no conversation between two users yet, create new conversation thread and send message
- * create_thread -> {
- *    user_ids:      [String],
- *    message: {
- *        user_id:   String,
- *        contents:  String,
- *        timestamp: u32,
- *    },
- *    action:        "create_thread"
- * }
- * ```
- *
- * ```rust,ignore
- * //load all conversations for a signed-in user (leftmost pane)
- * get_user_threads -> {
- *    user_id:        String,
- *    start_index:    u32,
- *    end_index:      u32,
- *    action:         "get_user_threads"
- * }
- * ```
- *
- * ```rust,ignore
- * //when user clicks on a conversation thread, load the messages in the thread (rightmost pane)
- * get_thread_messages -> {
- *    thread_id:      String,
- *    start_index:    u32,
- *    end_index:      u32,
- *    action:         "get_thread_messages"
- * }
- * ```
  *
  */
 

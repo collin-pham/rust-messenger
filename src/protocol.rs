@@ -31,7 +31,7 @@ pub struct Reply {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
-    pub body:   serde_json::Value, //e.g. for send_message, thread_id and message {}
+    pub body:   serde_json::Value, //e.g. for send_message, thread_id and nested message
     pub action: String,
 }
 
@@ -53,7 +53,7 @@ pub fn take_action(
 
     } else if request.action == "create_thread" {
         println!("creating thread...");
-        return action_create_thread(&request, firebase)
+        return action_create_thread(&request, firebase, id, connected_users)
 
     } else if request.action == "get_user_threads" {
         println!("getting user threads...");
@@ -165,7 +165,13 @@ pub fn action_send_message(
 
 /// Creates a new conversation thread if one doesn't exist. Updates all users
 /// involved. Returns a `Reply` or `error::ServerError`.
-pub fn action_create_thread(request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+pub fn action_create_thread(
+    request: &Request,
+    firebase: &Firebase,
+    id: &str,
+    connected_users: &Arc<Mutex<HashMap<String, Writer<TcpStream>>>>
+) -> Result<Reply, error::ServerError> {
+
     let m_string = match request.body.get("message") {
         Some(m) => { m.to_string() },
         None => {
@@ -222,11 +228,30 @@ pub fn action_create_thread(request: &Request, firebase: &Firebase) -> Result<Re
             return Err(err) },
     };
 
-    for u in &user_ids {
-        match users::update_user_threads(&u, &thread, &new_mes, &firebase) {
+    for u in user_ids.into_iter() {
+        match users::update_user_threads(u, &thread, &new_mes, &firebase) {
             Ok(response) => response,
             Err(err) => return Err(err),
         };
+        if u != id {
+            // TODO: Ensure Thread doesn't panic here
+            match connected_users.lock().unwrap().get_mut(u) {
+                Some(receiver) => {
+                    let reply = Reply {
+                        action  : "receive_message".to_owned(),
+                        body    : format!("{{\"thread_id\":\"{}\", \"message\": {}}}", thread, m_string),
+                        code    : 200,
+                    };
+
+                    let message = OwnedMessage::Text(serde_json::to_string(&reply).unwrap());
+                    match receiver.send_message(&message) {
+                        Ok(_)    => { },
+                        Err(err) => return Err(error::ServerError::SendMessageErr(err)),
+                    };
+                }
+                None => {println!("User not connected!")}
+            }
+        }
     }
 
     let res = match users::update_user_threads(&user, &thread, &new_mes, &firebase) {
