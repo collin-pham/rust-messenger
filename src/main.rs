@@ -63,6 +63,7 @@ fn main() {
             let ip = client.peer_addr().unwrap();
 
             println!("Connection from {}", ip);
+
             println!("Parsing Receiver and Sender...");
             let (mut receiver, mut sender) = client.split().unwrap();
 
@@ -93,7 +94,7 @@ fn main() {
                             Some(a) => a.as_str().unwrap(),
                             None => return,
                         };
-                        
+
                         match protocol::take_action(&action, &json_v, &firebase, &user_id, &clone) {
                             Ok(res) => {
                                 let reply = serde_json::to_string(&res).unwrap();
