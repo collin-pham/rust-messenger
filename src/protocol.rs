@@ -242,7 +242,7 @@ pub fn action_create_thread(request: &Request, firebase: &Firebase) -> Result<Re
 
     let reply = Reply {
         action: request.action.to_string(),
-        body: thread.to_string(),
+        body: format!("{{\"thread_id\":\"{}\"}}", thread),
         code
     };
 

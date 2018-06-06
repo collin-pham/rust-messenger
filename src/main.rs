@@ -16,9 +16,6 @@ use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 
-use serde_json::Value;
-
-
 // GLOBALS //
 const IPADDRESS  : &str = "127.0.0.1";
 const PORT       : &str = "8080";
