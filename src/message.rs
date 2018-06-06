@@ -1,3 +1,7 @@
+//! Module with functions to create messages
+//! holding necessary information for Firebase.
+//! Can convert from `Message` struct to JSON and
+//! vice versa.
 extern crate firebase;
 
 use self::firebase::{Firebase, Response};
@@ -57,27 +61,42 @@ pub fn new_message_to_thread_json(new_message: &Message) -> String {
     )
 }
 
-//#[cfg(test)]
-//mod message_tests {
-//    use super::*;
-//    use super::super::{db, users};
-//
-//    #[test]
-//    fn create_message_test() {
-//        let firebase = db::connect();
-//        let m = Message {
-//            user_id: "a".to_string(),
-//            timestamp: 20,
-//            contents: "create_message_test".to_string(),
-//            read: false,
-//        };
-//
-//        let res = create_message("test_thread_id", &m, &firebase);
-//
-//        assert_eq!(
-//            res.ok().unwrap().body,
-//            "a"
-//        )
-//    }
-//}
+#[cfg(test)]
+mod message_tests {
+    use super::*;
+
+    #[test]
+    fn message_user_json_test() {
+        let m = Message {
+            user_id: "a".to_string(),
+            timestamp: 20,
+            contents: "this is a test".to_string(),
+            read: false,
+        };
+
+        let res = new_message_to_user_json(&m);
+
+        assert_eq!(
+            res,
+            "{\"user_id\":\"a\", \"timestamp\":20, \"contents\":\"this is a test\", \"read\":false}"
+        )
+    }
+
+    #[test]
+    fn message_thread_json_test() {
+        let m = Message {
+            user_id: "a".to_string(),
+            timestamp: 20,
+            contents: "this is a test".to_string(),
+            read: false,
+        };
+
+        let res = new_message_to_thread_json(&m);
+
+        assert_eq!(
+            res,
+            "{\"user_id\":\"a\", \"timestamp\":20, \"contents\":\"this is a test\"}"
+        )
+    }
+}
 

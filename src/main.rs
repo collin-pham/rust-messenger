@@ -12,7 +12,6 @@ use rust_messenger::{db, protocol};
 use websocket::OwnedMessage;
 use websocket::sync::Server;
 use websocket::sender::Writer;
-use websocket::server;
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
@@ -24,7 +23,9 @@ use serde_json::Value;
 const IPADDRESS  : &str = "127.0.0.1";
 const PORT       : &str = "8080";
 
-
+/// Initiates the websocket server connection. Creates a new thread for each
+/// user connected. Stores a list of connected users in an `Arc<Mutex<HashMap<_>>>`
+/// linking a username to their unique ID.
 fn main() {
     println!("Binding to server...");
     let server = Server::bind(format!("{}:{}", IPADDRESS, PORT)).unwrap();
@@ -65,7 +66,7 @@ fn main() {
             println!("Connection from {}", ip);
 
             println!("Parsing Receiver and Sender...");
-            let (mut receiver, mut sender) = client.split().unwrap();
+            let (mut receiver, sender) = client.split().unwrap();
 
             println!("Inserting User Into HashMap...");
             match clone.lock() {
@@ -95,7 +96,7 @@ fn main() {
                             None => return,
                         };
 
-                        match protocol::take_action(&action, &json_v, &firebase, &user_id, &clone) {
+                        match protocol::take_action(&action, json_v.clone(), &firebase, &user_id, &clone) {
                             Ok(res) => {
                                 let reply = serde_json::to_string(&res).unwrap();
                                 let message = OwnedMessage::Text(reply);

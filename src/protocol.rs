@@ -1,3 +1,6 @@
+//! Interprets requests from frontend
+//! and performs corresponding action
+//! according to the action protocol.
 extern crate websocket;
 extern crate serde;
 extern crate firebase;
@@ -14,21 +17,30 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
+/// Struct which responds to the frontend with a given
+/// action that was requested, a body which is empty if the
+/// client does not need further information, otherwise it
+/// contains message contents, and a code indicating a
+/// success or an error. Derives Serializability in order
+/// to be transformed into JSON data.
 pub struct Reply {
     pub action: String,
     pub body:   String,
     pub code:   u32,
 }
 
-//#[derive(Serialize, Deserialize, Debug)]
-//pub struct Request {
-//    pub data:   String,
-//    pub action: String,
-//}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Request {
+    pub body:   serde_json::Value, //e.g. for send_message, thread_id and message {}
+    pub action: String,
+}
 
+/// Matches an action and calls corresponding function to query
+/// Firebase. For send_message, will ping connected_users who
+/// are involved in the send_message to perform a live update.
 pub fn take_action(
     action: &str,
-    json_v: &serde_json::Value,
+    json_v: serde_json::Value,
     firebase: &Firebase,
     id: &str,
     connected_users: &Arc<Mutex<HashMap<String, Writer<TcpStream>>>>)
@@ -36,21 +48,26 @@ pub fn take_action(
 
     println!("Action is {}", action);
 
+    let request = Request {
+        body:   json_v,
+        action: action.to_string(),
+    };
+
     if action == "send_message" {
         println!("sending message...");
-        return action_send_message(action, &json_v, firebase, id, connected_users)
+        return action_send_message(action, &request, firebase, id, connected_users)
 
     } else if action == "create_thread" {
         println!("creating thread...");
-        return action_create_thread(action, &json_v, firebase)
+        return action_create_thread(action, &request, firebase)
 
     } else if action == "get_user_threads" {
         println!("getting user threads...");
-        return action_get_user_threads(action, &json_v, firebase)
+        return action_get_user_threads(action, &request, firebase)
 
     } else if action == "get_thread_messages" {
         println!("getting thread messages...");
-        return action_get_thread_messages(action, &json_v, firebase)
+        return action_get_thread_messages(action, &request, firebase)
 
     } else {
         println!("not matching correctly");
@@ -58,14 +75,18 @@ pub fn take_action(
     }
 }
 
-fn action_send_message(
+/// Creates a new_message inside of thread_id, updating all
+/// involved users and pinging live updates to connected users
+/// to the server. Returns a `Reply` or `error::ServerError`.
+pub fn action_send_message(
     action: &str,
-    json_v: &serde_json::Value,
+    request: &Request,
     firebase: &Firebase,
     id: &str,
     connected_users: &Arc<Mutex<HashMap<String, Writer<TcpStream>>>>
 ) -> Result<Reply, error::ServerError> {
-    let m_string = match json_v.get("message") {
+
+    let m_string = match request.body.get("message") {
         Some(m) => { m.to_string() },
         None => {
             println ! ("None value returned");
@@ -83,7 +104,7 @@ fn action_send_message(
 
     println ! ("Message struct is {:?}", new_mes);
 
-    let thread_id = match json_v.get("thread_id") {
+    let thread_id = match request.body.get("thread_id") {
         Some(id) => id.as_str().unwrap(),
         None => {
             println ! ("Thread_id None value returned");
@@ -124,7 +145,10 @@ fn action_send_message(
                     };
 
                     let message = OwnedMessage::Text(serde_json::to_string(&reply).unwrap());
-                    receiver.send_message(&message);
+                    match receiver.send_message(&message) {
+                        Ok(_)    => { },
+                        Err(err) => return Err(error::ServerError::SendMessageErr(err)),
+                    };
                 }
                 None => {println!("User not connected!")}
             }
@@ -148,9 +172,10 @@ fn action_send_message(
 }
 
 
-
-fn action_create_thread(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Reply, error::ServerError> {
-    let m_string = match json_v.get("message") {
+/// Creates a new conversation thread if one doesn't exist. Updates all users
+/// involved. Returns a `Reply` or `error::ServerError`.
+pub fn action_create_thread(action: &str, request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+    let m_string = match request.body.get("message") {
         Some(m) => { m.to_string() },
         None => {
             println!("None value returned");
@@ -166,7 +191,7 @@ fn action_create_thread(action: &str, json_v: &serde_json::Value, firebase: &Fir
         },
     };
 
-    let user_ids: Vec<&str> = match json_v.get("user_ids") {
+    let user_ids: Vec<&str> = match request.body.get("user_ids") {
         Some(ids) => ids
             .as_array()
             .unwrap()
@@ -227,7 +252,7 @@ fn action_create_thread(action: &str, json_v: &serde_json::Value, firebase: &Fir
 
     let reply = Reply {
         action: action.to_string(),
-        body: "".to_string(),
+        body: thread.to_string(),
         code
     };
 
@@ -235,23 +260,24 @@ fn action_create_thread(action: &str, json_v: &serde_json::Value, firebase: &Fir
 }
 
 
-
-fn action_get_user_threads(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Reply, error::ServerError> {
-    let user_id = match json_v.get("user_id") {
+/// Queries a range of a user's given conversation threads and returns them.
+/// Returns a `Reply` or `error::ServerError`.
+pub fn action_get_user_threads(action: &str, request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+    let user_id = match request.body.get("user_id") {
         Some(id) => id.as_str().unwrap(),
         None => {
             println!("User ID error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
 
-    let start_index = match json_v.get("start_index") {
+    let start_index = match request.body.get("start_index") {
         Some(i) => i.as_u64().unwrap() as u32,
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
 
 
-    let end_index = match json_v.get("end_index") {
+    let end_index = match request.body.get("end_index") {
         Some(i) => i.as_u64().unwrap() as u32,
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }
@@ -280,21 +306,22 @@ fn action_get_user_threads(action: &str, json_v: &serde_json::Value, firebase: &
 }
 
 
-
-fn action_get_thread_messages(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Reply, error::ServerError> {
-    let thread_id = match json_v.get("thread_id") {
+/// Queries a range of messages for a given thread conversation.
+/// Returns a `Reply` or `error::ServerError`.
+pub fn action_get_thread_messages(action: &str, request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+    let thread_id = match request.body.get("thread_id") {
         Some(id) => id.as_str().unwrap(),
         None => { println!("Thread ID error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
 
-    let start_index = match json_v.get("start_index") {
+    let start_index = match request.body.get("start_index") {
         Some(i) => i.as_u64().unwrap() as u32,
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }
     };
 
-    let end_index = match json_v.get("end_index") {
+    let end_index = match request.body.get("end_index") {
         Some(i) => i.as_u64().unwrap() as u32,
         None => { println!("End index error");
             return Err(error::ServerError::DatabaseFormatErr) }

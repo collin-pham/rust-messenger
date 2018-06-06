@@ -1,8 +1,12 @@
+//! Error tracking module to handle the different
+//! variety of errors produced by rust-messenger
+//! and its dependencies.
 extern crate firebase;
 extern crate hyper;
 extern crate hyper_openssl;
 extern crate rustc_serialize;
 extern crate url;
+extern crate websocket;
 
 use self::firebase::{ReqErr, ParseError};
 use std::str;
@@ -47,4 +51,5 @@ pub enum ServerError {
     InvalidUserId,
     InvalidThreadId,
     DatabaseFormatErr,
+    SendMessageErr(websocket::WebSocketError),
 }

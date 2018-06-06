@@ -1,6 +1,6 @@
 # Persistent data store
 
-rust-messenger will use a No-SQL DB (likely firebase) to handle and store messaging.
+rust-messenger will use a No-SQL DB to handle and store messaging.
 
 
 ## High level Workflow:

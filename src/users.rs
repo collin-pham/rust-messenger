@@ -1,3 +1,7 @@
+//! User functions to interact with
+//! Users table in Firebase. Can fetch user
+//! data, including conversations, identification,
+//! and can sort conversations returned.
 extern crate firebase;
 extern crate serde_json;
 extern crate hyper;
