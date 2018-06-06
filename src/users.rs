@@ -20,9 +20,7 @@ pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::S
     let res = match user.get() {
         Err(err)    => { return Err(error::handle_req_error(err)) }
         Ok(res)     => {
-            if res.body == "null" {
-                return Err(error::ServerError::InvalidUserId)
-            }
+            if res.body == "null" { return Err(error::ServerError::InvalidUserId) }
             res
         }
     };
