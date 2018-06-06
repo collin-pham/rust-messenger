@@ -88,10 +88,7 @@ pub fn action_send_message(
 
     let m_string = match request.body.get("message") {
         Some(m) => { m.to_string() },
-        None => {
-            println ! ("None value returned");
-            return Err(error::ServerError::DatabaseFormatErr)
-        },
+        None => { return Err(error::ServerError::DatabaseFormatErr) },
     };
 
     let new_mes: message::Message = match serde_json::from_str(m_string.as_str()) {
@@ -136,6 +133,7 @@ pub fn action_send_message(
             Err(err) => return Err(err),
         };
         if u != id {
+            // TODO: Ensure Thread doesn't panic here
             match connected_users.lock().unwrap().get_mut(u.as_str().unwrap()) {
                 Some(receiver) => {
                     let reply = Reply {
@@ -213,13 +211,12 @@ pub fn action_create_thread(action: &str, request: &Request, firebase: &Firebase
     let thread = match serde_json::from_str(&create_res.body).unwrap() {
         serde_json::Value::Object(map) => {
             println!("{:?}", map);
-            //println!("Map is {:?}", map);
-            //println!("{:?}", map.get("name").unwrap().to_string());
             map.get("name").unwrap().to_string()
         },
         _ => {return Err(error::ServerError::ReqNotJSON) }
     };
 
+    // Remove extra quotes from thread_id
     let thread = str::replace(&thread, "\"", "");
 
     let user = new_mes.user_id.clone();
@@ -267,27 +264,34 @@ pub fn action_get_user_threads(action: &str, request: &Request, firebase: &Fireb
         Some(id) => id.as_str().unwrap(),
         None => {
             println!("User ID error");
-            return Err(error::ServerError::DatabaseFormatErr) }
+            return Err(error::ServerError::DatabaseFormatErr)
+        }
     };
 
     let start_index = match request.body.get("start_index") {
         Some(i) => i.as_u64().unwrap() as u32,
-        None => { println!("End index error");
-            return Err(error::ServerError::DatabaseFormatErr) }
+        None => {
+            println!("End index error");
+            return Err(error::ServerError::DatabaseFormatErr)
+        }
     };
 
 
     let end_index = match request.body.get("end_index") {
         Some(i) => i.as_u64().unwrap() as u32,
-        None => { println!("End index error");
-            return Err(error::ServerError::DatabaseFormatErr) }
+        None => {
+            println!("End index error");
+            return Err(error::ServerError::DatabaseFormatErr)
+        }
     };
 
 
     let res = match users::get_user_threads(user_id, start_index, end_index, &firebase) {
         Ok(response) => response,
-        Err(err) => { println!("Error get_user_threads {:?}", err);
-            return Err(err) }
+        Err(err) => {
+            println!("Error get_user_threads {:?}", err);
+            return Err(err)
+        }
     };
 
     let code: u32 = match res.code {
@@ -311,25 +315,32 @@ pub fn action_get_user_threads(action: &str, request: &Request, firebase: &Fireb
 pub fn action_get_thread_messages(action: &str, request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
     let thread_id = match request.body.get("thread_id") {
         Some(id) => id.as_str().unwrap(),
-        None => { println!("Thread ID error");
-            return Err(error::ServerError::DatabaseFormatErr) }
+        None => {
+            println!("Thread ID error");
+            return Err(error::ServerError::DatabaseFormatErr)
+        }
     };
 
     let start_index = match request.body.get("start_index") {
         Some(i) => i.as_u64().unwrap() as u32,
-        None => { println!("End index error");
-            return Err(error::ServerError::DatabaseFormatErr) }
+        None => {
+            println!("End index error");
+            return Err(error::ServerError::DatabaseFormatErr)
+        }
     };
 
     let end_index = match request.body.get("end_index") {
         Some(i) => i.as_u64().unwrap() as u32,
-        None => { println!("End index error");
-            return Err(error::ServerError::DatabaseFormatErr) }
+        None => {
+            println!("End index error");
+            return Err(error::ServerError::DatabaseFormatErr)
+        }
     };
 
     let res = match threads::get_thread_messages(thread_id, start_index, end_index, &firebase) {
         Ok(response) => response,
-        Err(err) => { println!("Error get_user_threads {:?}", err);
+        Err(err) => {
+            println!("Error get_user_threads {:?}", err);
             match err {
                 error::ServerError::InvalidThreadId => {
                     return Ok(Reply{

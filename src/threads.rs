@@ -23,9 +23,7 @@ pub fn get_thread_user_ids(thread_id: &str, firebase: &Firebase) -> Result<Respo
             return Err(error::handle_req_error(err))
         }
         Ok(res)     => {
-            if res.body == "null" {
-                return Err(error::ServerError::InvalidThreadId)
-            }
+            if res.body == "null" { return Err(error::ServerError::InvalidThreadId) }
             res
         }
     };
@@ -46,14 +44,9 @@ pub fn get_thread_messages(thread_id: &str, start_index: u32, end_index: u32, fi
 
     let range = end_index - start_index;
     let res = match thread.order_by("\"timestamp\"").limit_to_last(range).get() {
-        Err(err)    => {
-            println!("{:?}", err);
-            return Err(error::handle_req_error(err))
-        }
+        Err(err)    => { return Err(error::handle_req_error(err)) }
         Ok(res)     => {
-            if res.body == "null" {
-                return Err(error::ServerError::InvalidThreadId)
-            }
+            if res.body == "null" { return Err(error::ServerError::InvalidThreadId) }
             res
         }
     };
