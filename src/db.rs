@@ -1,3 +1,7 @@
+//! random doc comments
+//! more comments
+//! more comments
+//! even more comments
 extern crate firebase;
 
 use self::firebase::Firebase;

@@ -100,3 +100,83 @@ fn sort_user_threads(threads: String) -> Result<Response, error::ServerError> {
 
     Ok(res)
 }
+
+#[cfg(test)]
+mod users_tests {
+    use super::*;
+    use super::super::{db, message::Message};
+
+    #[test]
+    fn get_user_test() {
+        let firebase = db::connect();
+        let res = get_user("test_user_id", &firebase);
+        assert_eq!
+        ( res.ok().unwrap().body,
+          "{\"email\":\"test@test.com\",\"threads\":\
+          {\"test_thread_id\":{\"contents\":\"Look! I sent you a message.\",\
+          \"read\":false,\"timestamp\":10,\"user_id\":\"test_user_id\"}},\"username\":\"Test Name\"}"
+        )
+    }
+
+    #[test]
+    fn get_user_threads_test() {
+        let firebase = db::connect();
+        let res = get_user_threads("test_user_id", 0, 1, &firebase);
+        assert_eq!
+        ( res.ok().unwrap().body,
+          "[{\"test_thread_id\":\
+                {\"contents\":\"Look! I sent you a message.\",\
+                 \"read\":false,\
+                 \"timestamp\":10,\
+                 \"user_id\":\"test_user_id\"}}]"
+        )
+    }
+
+    #[test]
+    fn update_user_threads_test() {
+        let firebase = db::connect();
+
+        let new_message = Message {
+            user_id: "test_user_id_2".to_owned(),
+            timestamp: 100,
+            contents: "This Is A Test Message".to_owned(),
+            read: false,
+        };
+
+        let res = update_user_threads("test_user_id_2", "test_thread_id_2", &new_message, &firebase);
+        assert_eq!
+        ( res.ok().unwrap().body,
+          "{\"user_id\":\"test_user_id_2\",\"timestamp\":100,\"contents\":\"This Is A Test Message\",\"read\":false}"
+        )
+    }
+
+    #[test]
+    fn sort_user_threads_test() {
+        let res = sort_user_threads(
+            "{\"test_thread_id\":\
+                {\"contents\":\"well hello there\",\
+                \"read\":true,\
+                \"timestamp\":5,\
+                \"user_id\":\"test_user_id_2\"},\
+              \"test_thread_id_2\":\
+                {\"contents\":\"This Is A Test Message\",\
+                \"read\":false,\
+                \"timestamp\":100,\
+                \"user_id\":\"test_user_id_2\"}}".to_string()
+        );
+
+
+        let sorted =  "[{\"test_thread_id\":\
+                            {\"contents\":\"well hello there\",\
+                            \"read\":true,\
+                            \"timestamp\":5,\
+                            \"user_id\":\"test_user_id_2\"}},\
+                        {\"test_thread_id_2\":\
+                            {\"contents\":\"This Is A Test Message\",\
+                            \"read\":false,\
+                            \"timestamp\":100,\
+                            \"user_id\":\"test_user_id_2\"}}]".to_string();
+
+       assert_eq!( res.ok().unwrap().body, sorted )
+    }
+}

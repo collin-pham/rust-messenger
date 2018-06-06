@@ -15,6 +15,12 @@ pub struct Reply {
     pub code:   u32,
 }
 
+//#[derive(Serialize, Deserialize, Debug)]
+//pub struct Request {
+//    pub data:   String,
+//    pub action: String,
+//}
+
 pub fn take_action(action: &str, json_v: &serde_json::Value, firebase: &Firebase) -> Result<Reply, error::ServerError> {
     println!("Action is {}", action);
 
@@ -72,6 +78,25 @@ fn action_send_message(action: &str, json_v: &serde_json::Value, firebase: &Fire
             println ! ("Response None value returned");
             return Err(err) },
     };
+
+    let user_ids = match threads::get_thread_user_ids(thread_id, firebase) {
+        Ok(response) => {
+            match serde_json::from_str(&response.body).unwrap() {
+                serde_json::Value::Array(v) => v,
+                _ => return  Err(error::ServerError::DatabaseFormatErr),
+            }
+        },
+        Err(err) => {
+            println ! ("Response None value returned");
+            return Err(err) },
+    };
+
+    for u in user_ids.into_iter() {
+        match users::update_user_threads(u.as_str().unwrap(), thread_id, &new_mes, &firebase) {
+            Ok(response) => response,
+            Err(err) => return Err(err),
+        };
+    }
 
     let code: u32 = match res.code {
         hyper::status::StatusCode::Ok => 200,
