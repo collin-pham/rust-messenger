@@ -72,7 +72,7 @@ fn sort_thread_messages(messages: String) -> Result<Response, error::ServerError
         serde_json::Value::Object(map) => {
             let mut messages: Vec<_> = map.values().cloned().collect();
             messages.sort_by(|a, b| {
-                b.get("timestamp").unwrap().as_u64().unwrap().cmp(&a.get("timestamp").unwrap().as_u64().unwrap())
+                a.get("timestamp").unwrap().as_u64().unwrap().cmp(&b.get("timestamp").unwrap().as_u64().unwrap())
             });
 
             messages
