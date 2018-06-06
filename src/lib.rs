@@ -30,14 +30,14 @@
  *
  *
  * ```
- * struct send_message {
+ * send_message {
  *    thread_id:     String,
  *    message: {
  *        user_id:   String,
  *        contents:  String,
  *        timestamp: u32,
  *    },
- *    action:        String //"send_message"
+ *    action:        "send_message"
  * }
  * ```
  *
@@ -50,7 +50,7 @@
  *           contents:  String,
  *           timestamp: u32,
  *       },
- *       action:        String //"create_thread"
+ *       action:        "create_thread"
  *   }
  * ```
  *

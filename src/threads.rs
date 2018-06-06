@@ -87,38 +87,7 @@ fn sort_thread_messages(messages: String) -> Result<Response, error::ServerError
 
     Ok(res)
 }
-//    let messages = match serde_json::from_str(&messages).unwrap() {
-//        serde_json::Value::Object(map) => {
-//            let mut messages = vec![];
-//            for (key,message) in map.into_iter() {
-//                let mut item = serde_json::Map::new();
-//                item.insert(key, message);
-//
-//                messages.push(item);
-//            }
-//
-//
-//            messages.sort_by(|a, b| {
-//                a.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap()
-//                    .cmp(&b.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap())
-//            });
-//
-//            let mut sorted_messages = vec![];
-//            for item in messages.into_iter() {
-//                sorted_messages.push(serde_json::Value::Object(item));
-//            }
-//            sorted_messages
-//        }
-//        _ => {return Err(error::ServerError::ReqNotJSON)}
-//    };
-//
-//    let res = Response {
-//        body: serde_json::Value::Array(messages).to_string(),
-//        code: hyper::status::StatusCode::Ok,
-//    };
-//
-//    Ok(res)
-//}
+
 fn user_ids_to_str (user_ids: &Vec<&str>) -> String {
     format!("{:?}", user_ids)
 }
@@ -142,13 +111,13 @@ mod thread_tests {
         assert_eq!(
             res.ok().unwrap().body,
             "[{\"contents\":\
-                \"well hello there!\",\
-                \"timestamp\":5,\
-                \"user_id\":\"test_user_id_2\"},\
-              {\"contents\":\
                 \"hello\",\
                 \"timestamp\":3,\
-                \"user_id\":\"test_user_id\"}]"
+                \"user_id\":\"test_user_id\"},\
+              {\"contents\":\
+                \"well hello there!\",\
+                \"timestamp\":5,\
+                \"user_id\":\"test_user_id_2\"}]"
         )
     }
 }
