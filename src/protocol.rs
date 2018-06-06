@@ -39,35 +39,29 @@ pub struct Request {
 /// Firebase. For send_message, will ping connected_users who
 /// are involved in the send_message to perform a live update.
 pub fn take_action(
-    action: &str,
-    json_v: serde_json::Value,
+    request: &Request,
     firebase: &Firebase,
     id: &str,
     connected_users: &Arc<Mutex<HashMap<String, Writer<TcpStream>>>>)
     -> Result<Reply, error::ServerError> {
 
-    println!("Action is {}", action);
+    println!("Action is {}", request.action);
 
-    let request = Request {
-        body:   json_v,
-        action: action.to_string(),
-    };
-
-    if action == "send_message" {
+    if request.action == "send_message" {
         println!("sending message...");
-        return action_send_message(action, &request, firebase, id, connected_users)
+        return action_send_message(&request, firebase, id, connected_users)
 
-    } else if action == "create_thread" {
+    } else if request.action == "create_thread" {
         println!("creating thread...");
-        return action_create_thread(action, &request, firebase)
+        return action_create_thread(&request, firebase)
 
-    } else if action == "get_user_threads" {
+    } else if request.action == "get_user_threads" {
         println!("getting user threads...");
-        return action_get_user_threads(action, &request, firebase)
+        return action_get_user_threads(&request, firebase)
 
-    } else if action == "get_thread_messages" {
+    } else if request.action == "get_thread_messages" {
         println!("getting thread messages...");
-        return action_get_thread_messages(action, &request, firebase)
+        return action_get_thread_messages(&request, firebase)
 
     } else {
         println!("not matching correctly");
@@ -79,7 +73,6 @@ pub fn take_action(
 /// involved users and pinging live updates to connected users
 /// to the server. Returns a `Reply` or `error::ServerError`.
 pub fn action_send_message(
-    action: &str,
     request: &Request,
     firebase: &Firebase,
     id: &str,
@@ -163,7 +156,7 @@ pub fn action_send_message(
     };
 
     let reply = Reply {
-        action: action.to_string(),
+        action: request.action.to_string(),
         body: "".to_string(),
         code
     };
@@ -174,7 +167,7 @@ pub fn action_send_message(
 
 /// Creates a new conversation thread if one doesn't exist. Updates all users
 /// involved. Returns a `Reply` or `error::ServerError`.
-pub fn action_create_thread(action: &str, request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+pub fn action_create_thread(request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
     let m_string = match request.body.get("message") {
         Some(m) => { m.to_string() },
         None => {
@@ -251,7 +244,7 @@ pub fn action_create_thread(action: &str, request: &Request, firebase: &Firebase
     };
 
     let reply = Reply {
-        action: action.to_string(),
+        action: request.action.to_string(),
         body: thread.to_string(),
         code
     };
@@ -262,7 +255,7 @@ pub fn action_create_thread(action: &str, request: &Request, firebase: &Firebase
 
 /// Queries a range of a user's given conversation threads and returns them.
 /// Returns a `Reply` or `error::ServerError`.
-pub fn action_get_user_threads(action: &str, request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+pub fn action_get_user_threads(request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
     let user_id = match request.body.get("user_id") {
         Some(id) => id.as_str().unwrap(),
         None => {
@@ -297,7 +290,7 @@ pub fn action_get_user_threads(action: &str, request: &Request, firebase: &Fireb
     };
 
     let reply = Reply {
-        action: action.to_string(),
+        action: request.action.to_string(),
         body: res.body,
         code
     };
@@ -308,7 +301,7 @@ pub fn action_get_user_threads(action: &str, request: &Request, firebase: &Fireb
 
 /// Queries a range of messages for a given thread conversation.
 /// Returns a `Reply` or `error::ServerError`.
-pub fn action_get_thread_messages(action: &str, request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
+pub fn action_get_thread_messages(request: &Request, firebase: &Firebase) -> Result<Reply, error::ServerError> {
     let thread_id = match request.body.get("thread_id") {
         Some(id) => id.as_str().unwrap(),
         None => { println!("Thread ID error");
@@ -333,7 +326,7 @@ pub fn action_get_thread_messages(action: &str, request: &Request, firebase: &Fi
             match err {
                 error::ServerError::InvalidThreadId => {
                     return Ok(Reply{
-                        action: action.to_string(),
+                        action: request.action.to_string(),
                         body: "Invalid Thread Id".to_string(),
                         code: 404
                     })
@@ -350,7 +343,7 @@ pub fn action_get_thread_messages(action: &str, request: &Request, firebase: &Fi
     };
 
     let reply = Reply {
-        action: action.to_string(),
+        action: request.action.to_string(),
         body: res.body,
         code
     };
