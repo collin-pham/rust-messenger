@@ -80,8 +80,8 @@ fn sort_user_threads(threads: String) -> Result<Response, error::ServerError> {
             // Sort threads by timestamp
             threads.sort_by(|a, b| {
                 // We truly apologize for this ugly code.
-                b.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap()
-                    .cmp(&a.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap())
+                a.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap()
+                    .cmp(&b.values().cloned().collect::<Vec<_>>()[0].get("timestamp").unwrap().as_u64().unwrap())
             });
 
             let mut sorted_threads = vec![];
