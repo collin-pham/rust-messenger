@@ -8,6 +8,7 @@ use self::firebase::{ReqErr, ParseError};
 use std::str;
 use std::io;
 
+/// Returns errors related to parsing.
 pub fn handle_parse_error(err: ParseError) -> ServerError {
     match err {
         ParseError::UrlHasNoPath    => ServerError::UrlHasNoPath,
@@ -16,6 +17,7 @@ pub fn handle_parse_error(err: ParseError) -> ServerError {
     }
 }
 
+/// Returns errors stemming from requests to the Firebase.
 pub fn handle_req_error(err: ReqErr) -> ServerError {
     match err {
         ReqErr::ReqNotJSON                  => ServerError::ReqNotJSON,
@@ -29,6 +31,7 @@ pub fn handle_req_error(err: ReqErr) -> ServerError {
 }
 
 #[derive(Debug)]
+/// Possible server errors, including ones inherited from dependecies such as hyper
 pub enum ServerError {
     BadRequest,
     ReqNotJSON,

@@ -8,6 +8,9 @@ extern crate serde_json;
 
 
 #[derive(Serialize, Deserialize, Debug)]
+/// Message structure holding the user who sent the message, when the
+/// message was sent, the text inside, and a read receipt. Derives
+/// Serializability in order to be transformed into JSON data.
 pub struct Message {
     pub user_id:    String,
     pub timestamp:  usize,
@@ -15,6 +18,8 @@ pub struct Message {
     pub read:       bool,
 }
 
+/// Sends a new Message to the specified conversation of `thread_id`, assuming that
+/// the user already has a conversation started.
 pub fn create_message(thread_id: &str, new_message: &Message, firebase: &Firebase)
     -> Result<Response, error::ServerError>
 {
@@ -33,6 +38,7 @@ pub fn create_message(thread_id: &str, new_message: &Message, firebase: &Firebas
     Ok(res)
 }
 
+/// Converts Message struct into a JSON string for the user table.
 pub fn new_message_to_user_json(new_message: &Message) -> String {
     format!("{{\"user_id\":\"{}\", \"timestamp\":{}, \"contents\":\"{}\", \"read\":{}}}",
             new_message.user_id,
@@ -42,6 +48,7 @@ pub fn new_message_to_user_json(new_message: &Message) -> String {
     )
 }
 
+/// Converts Message struct into a JSON string for the thread table.
 pub fn new_message_to_thread_json(new_message: &Message) -> String {
     format!("{{\"user_id\":\"{}\", \"timestamp\":{}, \"contents\":\"{}\"}}",
             new_message.user_id,

@@ -37,7 +37,7 @@ fn main() {
 
         println!("Getting UserId...");
         let user_id = match &request.request.subject.1 {
-            hyper::uri::RequestUri::AbsolutePath(path) => {
+            &hyper::uri::RequestUri::AbsolutePath(ref path) => {
                 let user_id = str::replace(&path, "/?user_id=", "");
                 println!("{:?}", user_id);
                 user_id
@@ -93,7 +93,7 @@ fn main() {
                             Some(a) => a.as_str().unwrap(),
                             None => return,
                         };
-
+                        
                         match protocol::take_action(&action, &json_v, &firebase, &user_id, &clone) {
                             Ok(res) => {
                                 let reply = serde_json::to_string(&res).unwrap();

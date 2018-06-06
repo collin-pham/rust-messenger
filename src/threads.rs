@@ -99,11 +99,11 @@ fn build_thread_json(user_ids: &Vec<&str>) -> String{
 
 #[cfg(test)]
 mod thread_tests {
-    use super::{get_thread_messages};
+    use super::*;
     use super::super::db;
 
     #[test]
-    fn get_thread_test() {
+    fn get_thread_messages_test() {
         let firebase = db::connect();
 
         let res = get_thread_messages("test_thread_id", 0, 2, &firebase);
@@ -120,4 +120,56 @@ mod thread_tests {
                 \"user_id\":\"test_user_id_2\"}]"
         )
     }
+
+    #[test]
+    fn get_thread_user_ids_test() {
+        let firebase = db::connect();
+
+        let res = get_thread_user_ids("test_thread_id", &firebase);
+
+        assert_eq!(
+            res.ok().unwrap().body,
+            "[\"test_user_id\",\"test_user_id_2\"]"
+        )
+    }
+
+//    #[test]
+//    fn sort_thread_messages_test() {
+//        let firebase = db::connect();
+//        let res = sort_thread_messages(
+//            "[{\"contents\":\
+//                \"hello\",\
+//                \"timestamp\":3,\
+//                \"user_id\":\"test_user_id\"},\
+//              {\"contents\":\
+//                \"well hello there!\",\
+//                \"timestamp\":5,\
+//                \"user_id\":\"test_user_id_2\"}]".to_string());
+//
+//
+////            "[{\"contents\":\
+////                \"well hello there!\",\
+////                \"timestamp\":5,\
+////                \"user_id\":\"test_user_id_2\"},\
+////              {\"contents\":\
+////                \"hello\",\
+////                \"timestamp\":3,\
+////                \"user_id\":\"test_user_id\"}]".to_string()
+////        );
+//
+//
+//        let sorted =
+//            "[{{\"contents\":\
+//                \"hello\",\
+//                \"timestamp\":3,\
+//                \"user_id\":\"test_user_id\"},\
+//              {\"contents\":\
+//                \"well hello there!\",\
+//                \"timestamp\":5,\
+//                \"user_id\":\"test_user_id_2\"}]".to_string();
+//
+//        let res2 = get_thread_messages("test_thread_id", 0, 2, &firebase);
+//
+//        assert_eq!( res.ok().unwrap().body, sorted )
+//    }
 }

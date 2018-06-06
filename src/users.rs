@@ -5,6 +5,8 @@ extern crate hyper;
 use self::firebase::{Firebase, Response};
 use super::{error, message};
 
+/// Retrieves a user from Firebase, returning a Response whose body
+/// includes the user's email, username, and list of conversation/thread IDs.
 pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::ServerError>{
     let user = match firebase.at(&format!("/users/{}", user_id)) {
         Err(err)            => { return Err(error::handle_parse_error(err)) }
@@ -24,6 +26,8 @@ pub fn get_user(user_id: &str, firebase: &Firebase) -> Result<Response, error::S
     Ok(res)
 }
 
+/// Retrieves a user's threads from Firebase, returning a Response whose body
+/// includes the thread ID which contains the most recent message in the conversation.
 pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebase: &Firebase)
     -> Result<Response, error::ServerError>
 {
@@ -49,6 +53,8 @@ pub fn get_user_threads(user_id: &str, start_index: u32, end_index: u32, firebas
     sort_user_threads(res.body)
 }
 
+/// Updates a user's thread conversation with the contents of a new Message.
+/// Should be called for the sender and receiver of new_message.
 pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: &message::Message, firebase: &Firebase)
     -> Result<Response, error::ServerError>
 {
@@ -65,6 +71,8 @@ pub fn update_user_threads(user_id: &str, thread_id: &str, new_message: &message
     Ok(res)
 }
 
+/// Sorts the threads temporally, so as to be displayed in a coherent manner
+/// from the frontend. Called by `get_user_threads`.
 fn sort_user_threads(threads: String) -> Result<Response, error::ServerError> {
     let threads = match serde_json::from_str(&threads).unwrap() {
         serde_json::Value::Object(json) => {
@@ -112,9 +120,14 @@ mod users_tests {
         let res = get_user("test_user_id", &firebase);
         assert_eq!
         ( res.ok().unwrap().body,
-          "{\"email\":\"test@test.com\",\"threads\":\
-          {\"test_thread_id\":{\"contents\":\"Look! I sent you a message.\",\
-          \"read\":false,\"timestamp\":10,\"user_id\":\"test_user_id\"}},\"username\":\"Test Name\"}"
+          "{\"email\":\"test@test.com\",\
+            \"threads\":\
+               {\"test_thread_id\":\
+                  {\"contents\":\"Look! I sent you a message.\",\
+                  \"read\":false,\
+                  \"timestamp\":10,\
+                  \"user_id\":\"test_user_id\"}},\
+            \"username\":\"Test Name\"}"
         )
     }
 
@@ -166,15 +179,15 @@ mod users_tests {
         );
 
 
-        let sorted =  "[{\"test_thread_id\":\
-                            {\"contents\":\"well hello there\",\
-                            \"read\":true,\
-                            \"timestamp\":5,\
-                            \"user_id\":\"test_user_id_2\"}},\
-                        {\"test_thread_id_2\":\
+        let sorted =  "[{\"test_thread_id_2\":\
                             {\"contents\":\"This Is A Test Message\",\
                             \"read\":false,\
                             \"timestamp\":100,\
+                            \"user_id\":\"test_user_id_2\"}},\
+                        {\"test_thread_id\":\
+                            {\"contents\":\"well hello there\",\
+                            \"read\":true,\
+                            \"timestamp\":5,\
                             \"user_id\":\"test_user_id_2\"}}]".to_string();
 
        assert_eq!( res.ok().unwrap().body, sorted )
